@@ -1,8 +1,28 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {BoxGeometry, GridHelper, Mesh, MeshBasicMaterial, PerspectiveCamera} from 'three';
-import {hitsTarget} from './shooting.js';
+import {castShot, hitsTarget} from './shooting.js';
 import {createRoom} from './room.js';
+
+test('le tir donne le point du premier impact sur le mur devant la cible', () => {
+  const camera = new PerspectiveCamera(75, 1, 0.1, 100);
+  const target = new Mesh(new BoxGeometry(1, 1, 1), new MeshBasicMaterial());
+  const wall = new Mesh(new BoxGeometry(2, 2, 1), new MeshBasicMaterial());
+  target.position.z = -4;
+  wall.position.z = -2;
+  const impact = castShot(camera, [target, wall]);
+
+  assert.notEqual(impact, null);
+  assert.equal(impact.object, wall);
+  assert.deepEqual(impact.point.toArray(), [0, 0, -1.5]);
+  assert.equal(impact.distance, 1.5);
+});
+
+test('un tir dans le vide ne produit aucun impact', () => {
+  const camera = new PerspectiveCamera(75, 1, 0.1, 100);
+
+  assert.equal(castShot(camera, []), null);
+});
 
 test('une cible devant le viseur est touchée avant le premier rendu', () => {
   const camera = new PerspectiveCamera(75, 1, 0.1, 100);

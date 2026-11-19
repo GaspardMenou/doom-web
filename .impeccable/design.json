@@ -1,0 +1,491 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-19T16:01:34+00:00",
+  "title": "Design System: Doom Web",
+  "extensions": {
+    "colorMeta": {
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ivoire usé",
+        "canonical": "#e9e3d4",
+        "tonalRamp": [
+          "oklch(15.0% 0.0074 88.7)",
+          "oklch(27.0% 0.0137 88.7)",
+          "oklch(38.0% 0.0179 88.7)",
+          "oklch(50.0% 0.0211 88.7)",
+          "oklch(61.0% 0.0211 88.7)",
+          "oklch(73.0% 0.0179 88.7)",
+          "oklch(84.0% 0.0116 88.7)",
+          "oklch(95.0% 0.0042 88.7)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Olive clair",
+        "canonical": "#b7b8a5",
+        "tonalRamp": [
+          "oklch(15.0% 0.0092 109.5)",
+          "oklch(27.0% 0.0171 109.5)",
+          "oklch(38.0% 0.0224 109.5)",
+          "oklch(50.0% 0.0263 109.5)",
+          "oklch(61.0% 0.0263 109.5)",
+          "oklch(73.0% 0.0224 109.5)",
+          "oklch(84.0% 0.0145 109.5)",
+          "oklch(95.0% 0.0053 109.5)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Filet olive",
+        "canonical": "#626653",
+        "tonalRamp": [
+          "oklch(15.0% 0.0103 117.1)",
+          "oklch(27.0% 0.0192 117.1)",
+          "oklch(38.0% 0.0251 117.1)",
+          "oklch(50.0% 0.0296 117.1)",
+          "oklch(61.0% 0.0296 117.1)",
+          "oklch(73.0% 0.0251 117.1)",
+          "oklch(84.0% 0.0163 117.1)",
+          "oklch(95.0% 0.0059 117.1)"
+        ]
+      },
+      "red": {
+        "role": "primary",
+        "displayName": "Braise",
+        "canonical": "#c43b2e",
+        "tonalRamp": [
+          "oklch(15.0% 0.0615 29.3)",
+          "oklch(27.0% 0.1143 29.3)",
+          "oklch(38.0% 0.1495 29.3)",
+          "oklch(50.0% 0.1758 29.3)",
+          "oklch(61.0% 0.1758 29.3)",
+          "oklch(73.0% 0.1495 29.3)",
+          "oklch(84.0% 0.0967 29.3)",
+          "oklch(95.0% 0.0352 29.3)"
+        ]
+      },
+      "bright-red": {
+        "role": "primary",
+        "displayName": "Braise vive",
+        "canonical": "#f8735d",
+        "tonalRamp": [
+          "oklch(15.0% 0.0587 31.2)",
+          "oklch(27.0% 0.1089 31.2)",
+          "oklch(38.0% 0.1425 31.2)",
+          "oklch(50.0% 0.1676 31.2)",
+          "oklch(61.0% 0.1676 31.2)",
+          "oklch(73.0% 0.1425 31.2)",
+          "oklch(84.0% 0.0922 31.2)",
+          "oklch(95.0% 0.0335 31.2)"
+        ]
+      },
+      "green": {
+        "role": "secondary",
+        "displayName": "Vert de sortie",
+        "canonical": "#b5d778",
+        "tonalRamp": [
+          "oklch(15.0% 0.0447 125.2)",
+          "oklch(27.0% 0.0829 125.2)",
+          "oklch(38.0% 0.1084 125.2)",
+          "oklch(50.0% 0.1276 125.2)",
+          "oklch(61.0% 0.1276 125.2)",
+          "oklch(73.0% 0.1084 125.2)",
+          "oklch(84.0% 0.0702 125.2)",
+          "oklch(95.0% 0.0255 125.2)"
+        ]
+      },
+      "shell": {
+        "role": "neutral",
+        "displayName": "Graphite",
+        "canonical": "#11130f",
+        "tonalRamp": [
+          "oklch(15.0% 0.0030 129.0)",
+          "oklch(27.0% 0.0056 129.0)",
+          "oklch(38.0% 0.0073 129.0)",
+          "oklch(50.0% 0.0086 129.0)",
+          "oklch(61.0% 0.0086 129.0)",
+          "oklch(73.0% 0.0073 129.0)",
+          "oklch(84.0% 0.0047 129.0)",
+          "oklch(95.0% 0.0017 129.0)"
+        ]
+      },
+      "action-surface": {
+        "role": "primary",
+        "displayName": "Braise d’action",
+        "canonical": "#a93428",
+        "tonalRamp": [
+          "oklch(15.0% 0.0543 29.5)",
+          "oklch(27.0% 0.1008 29.5)",
+          "oklch(38.0% 0.1318 29.5)",
+          "oklch(50.0% 0.1550 29.5)",
+          "oklch(61.0% 0.1550 29.5)",
+          "oklch(73.0% 0.1318 29.5)",
+          "oklch(84.0% 0.0853 29.5)",
+          "oklch(95.0% 0.0310 29.5)"
+        ]
+      },
+      "action-ink": {
+        "role": "primary",
+        "displayName": "Ivoire d’action",
+        "canonical": "#fff1dc",
+        "tonalRamp": [
+          "oklch(15.0% 0.0110 78.2)",
+          "oklch(27.0% 0.0205 78.2)",
+          "oklch(38.0% 0.0268 78.2)",
+          "oklch(50.0% 0.0315 78.2)",
+          "oklch(61.0% 0.0315 78.2)",
+          "oklch(73.0% 0.0268 78.2)",
+          "oklch(84.0% 0.0173 78.2)",
+          "oklch(95.0% 0.0063 78.2)"
+        ]
+      },
+      "secondary-surface": {
+        "role": "neutral",
+        "displayName": "Acier olive",
+        "canonical": "#30362b",
+        "tonalRamp": [
+          "oklch(15.0% 0.0072 130.9)",
+          "oklch(27.0% 0.0134 130.9)",
+          "oklch(38.0% 0.0176 130.9)",
+          "oklch(50.0% 0.0207 130.9)",
+          "oklch(61.0% 0.0207 130.9)",
+          "oklch(73.0% 0.0176 130.9)",
+          "oklch(84.0% 0.0114 130.9)",
+          "oklch(95.0% 0.0041 130.9)"
+        ]
+      },
+      "focus": {
+        "role": "tertiary",
+        "displayName": "Ambre de focus",
+        "canonical": "#f4c782",
+        "tonalRamp": [
+          "oklch(15.0% 0.0352 77.5)",
+          "oklch(27.0% 0.0654 77.5)",
+          "oklch(38.0% 0.0856 77.5)",
+          "oklch(50.0% 0.1007 77.5)",
+          "oklch(61.0% 0.1007 77.5)",
+          "oklch(73.0% 0.0856 77.5)",
+          "oklch(84.0% 0.0554 77.5)",
+          "oklch(95.0% 0.0201 77.5)"
+        ]
+      },
+      "field-surface": {
+        "role": "neutral",
+        "displayName": "Cavité de saisie",
+        "canonical": "#0f150d",
+        "tonalRamp": [
+          "oklch(15.0% 0.0064 138.0)",
+          "oklch(27.0% 0.0119 138.0)",
+          "oklch(38.0% 0.0156 138.0)",
+          "oklch(50.0% 0.0183 138.0)",
+          "oklch(61.0% 0.0183 138.0)",
+          "oklch(73.0% 0.0156 138.0)",
+          "oklch(84.0% 0.0101 138.0)",
+          "oklch(95.0% 0.0037 138.0)"
+        ]
+      },
+      "field-ink": {
+        "role": "neutral",
+        "displayName": "Ivoire de saisie",
+        "canonical": "#f0ebdc",
+        "tonalRamp": [
+          "oklch(15.0% 0.0072 91.6)",
+          "oklch(27.0% 0.0134 91.6)",
+          "oklch(38.0% 0.0175 91.6)",
+          "oklch(50.0% 0.0206 91.6)",
+          "oklch(61.0% 0.0206 91.6)",
+          "oklch(73.0% 0.0175 91.6)",
+          "oklch(84.0% 0.0113 91.6)",
+          "oklch(95.0% 0.0041 91.6)"
+        ]
+      },
+      "menu-surface": {
+        "role": "neutral",
+        "displayName": "Panneau olive",
+        "canonical": "#20251cef",
+        "tonalRamp": [
+          "oklch(15.0% 0.0063 131.3)",
+          "oklch(27.0% 0.0117 131.3)",
+          "oklch(38.0% 0.0153 131.3)",
+          "oklch(50.0% 0.0180 131.3)",
+          "oklch(61.0% 0.0180 131.3)",
+          "oklch(73.0% 0.0153 131.3)",
+          "oklch(84.0% 0.0099 131.3)",
+          "oklch(95.0% 0.0036 131.3)"
+        ]
+      },
+      "hud-value": {
+        "role": "tertiary",
+        "displayName": "Ambre de compteur",
+        "canonical": "#f0d29c",
+        "tonalRamp": [
+          "oklch(15.0% 0.0271 82.0)",
+          "oklch(27.0% 0.0503 82.0)",
+          "oklch(38.0% 0.0658 82.0)",
+          "oklch(50.0% 0.0774 82.0)",
+          "oklch(61.0% 0.0774 82.0)",
+          "oklch(73.0% 0.0658 82.0)",
+          "oklch(84.0% 0.0426 82.0)",
+          "oklch(95.0% 0.0155 82.0)"
+        ]
+      },
+      "health": {
+        "role": "primary",
+        "displayName": "Vie",
+        "canonical": "#ff8767",
+        "tonalRamp": [
+          "oklch(15.0% 0.0536 35.9)",
+          "oklch(27.0% 0.0996 35.9)",
+          "oklch(38.0% 0.1302 35.9)",
+          "oklch(50.0% 0.1532 35.9)",
+          "oklch(61.0% 0.1532 35.9)",
+          "oklch(73.0% 0.1302 35.9)",
+          "oklch(84.0% 0.0843 35.9)",
+          "oklch(95.0% 0.0306 35.9)"
+        ]
+      },
+      "error-surface": {
+        "role": "primary",
+        "displayName": "Fond d’erreur",
+        "canonical": "#491e19",
+        "tonalRamp": [
+          "oklch(15.0% 0.0234 28.5)",
+          "oklch(27.0% 0.0435 28.5)",
+          "oklch(38.0% 0.0569 28.5)",
+          "oklch(50.0% 0.0669 28.5)",
+          "oklch(61.0% 0.0669 28.5)",
+          "oklch(73.0% 0.0569 28.5)",
+          "oklch(84.0% 0.0368 28.5)",
+          "oklch(95.0% 0.0134 28.5)"
+        ]
+      },
+      "error-border": {
+        "role": "primary",
+        "displayName": "Filet d’erreur",
+        "canonical": "#ef8d78",
+        "tonalRamp": [
+          "oklch(15.0% 0.0433 33.0)",
+          "oklch(27.0% 0.0805 33.0)",
+          "oklch(38.0% 0.1053 33.0)",
+          "oklch(50.0% 0.1238 33.0)",
+          "oklch(61.0% 0.1238 33.0)",
+          "oklch(73.0% 0.1053 33.0)",
+          "oklch(84.0% 0.0681 33.0)",
+          "oklch(95.0% 0.0248 33.0)"
+        ]
+      },
+      "error-ink": {
+        "role": "primary",
+        "displayName": "Texte d’erreur",
+        "canonical": "#ffdbd1",
+        "tonalRamp": [
+          "oklch(15.0% 0.0149 36.0)",
+          "oklch(27.0% 0.0276 36.0)",
+          "oklch(38.0% 0.0362 36.0)",
+          "oklch(50.0% 0.0425 36.0)",
+          "oklch(61.0% 0.0425 36.0)",
+          "oklch(73.0% 0.0362 36.0)",
+          "oklch(84.0% 0.0234 36.0)",
+          "oklch(95.0% 0.0085 36.0)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "frontend/src/style.css — h1; titre d’accueil, avec un override mobile sous 640px."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "frontend/src/style.css — .mission-intro h2; phrase de mission."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "frontend/src/style.css — .list-heading h2; titre du classement."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "frontend/src/style.css — .mission-intro > p:not(.mission-facts); texte de mission, limité à 39ch."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "frontend/src/style.css — .hud-cell > span, .hud-cell > label; libellés du HUD."
+      },
+      "action": {
+        "displayName": "Action",
+        "purpose": "frontend/src/style.css — .primary, .secondary; base des commandes principales."
+      },
+      "action-secondary": {
+        "displayName": "Secondary action",
+        "purpose": "frontend/src/style.css — .secondary; variante de corps du bouton secondaire."
+      },
+      "field": {
+        "displayName": "Field",
+        "purpose": "frontend/src/style.css — input; texte de saisie du pseudo."
+      },
+      "hud": {
+        "displayName": "HUD value",
+        "purpose": "frontend/src/style.css — .hud-cell > strong; valeurs tabulaires."
+      }
+    },
+    "shadows": [
+      {
+        "name": "action-bevel",
+        "value": "inset 0 2px 0 #fca1853d, inset 0 -3px 0 #451b1480, 0 6px 18px #090b0960",
+        "purpose": "frontend/src/style.css — .primary, .secondary; biseau des actions."
+      },
+      {
+        "name": "action-pressed",
+        "value": "inset 0 3px 6px #090b0980",
+        "purpose": "frontend/src/style.css — .primary:active, .secondary:active; état enfoncé."
+      },
+      {
+        "name": "map",
+        "value": "0 14px 36px #05070566",
+        "purpose": "frontend/src/style.css — .level-map; détachement du plan."
+      },
+      {
+        "name": "menu",
+        "value": "0 20px 70px #030603aa, inset 0 2px 0 #bdc49322",
+        "purpose": "frontend/src/style.css — .menu-panel; panneau sur le niveau."
+      },
+      {
+        "name": "hud",
+        "value": "0 -8px 32px #080a0870",
+        "purpose": "frontend/src/style.css — .hud; séparation de la barre d’état."
+      },
+      {
+        "name": "viewport-vignette",
+        "value": "inset 0 0 110px 15px #05070570",
+        "purpose": "frontend/src/style.css — .viewport::after; contour sombre de la vue."
+      }
+    ],
+    "motion": [
+      {
+        "name": "button-state",
+        "value": "background-color 150ms, border-color 150ms",
+        "purpose": "frontend/src/style.css — button; transition de survol, supprimée avec prefers-reduced-motion: reduce."
+      },
+      {
+        "name": "menu-arrive",
+        "value": "280ms cubic-bezier(.16, 1, .3, 1) both",
+        "purpose": "frontend/src/style.css — .home-grid, @keyframes menu-arrive; translateY(8px) / opacity .85 vers translateY(0) / opacity 1, supprimé avec prefers-reduced-motion: reduce."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "wide-home",
+        "value": "1700px"
+      },
+      {
+        "name": "compact",
+        "value": "900px"
+      },
+      {
+        "name": "stacked",
+        "value": "640px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary action",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Source: frontend/src/style.css — .primary; resume/replay action, without the larger .play-button override.",
+      "html": "<button class=\"ds-primary\">Reprendre</button>",
+      "css": ".ds-primary{display:inline-flex;align-items:center;justify-content:center;gap:20px;padding:14px 24px;min-height:50px;color:#fff1dc;border:1px solid #e87659;background:#a93428;font:800 24px/1.1 \"Barlow Condensed\",sans-serif;text-transform:uppercase;letter-spacing:.03em;border-radius:0;box-shadow:inset 0 2px 0 #fca1853d,inset 0 -3px 0 #451b1480,0 6px 18px #090b0960;cursor:pointer;transition:background-color 150ms,border-color 150ms;}.ds-primary:hover{background:#c64734;border-color:#ffc09a}.ds-primary:focus-visible{outline:3px solid #f4c782;outline-offset:5px;}.ds-primary:active{box-shadow:inset 0 3px 6px #090b0980}.ds-primary:disabled{opacity:.45;cursor:default}@media(prefers-reduced-motion:reduce){.ds-primary,.ds-secondary,.ds-utility,.ds-score-submit{transition:none}}"
+    },
+    {
+      "name": "Secondary action",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Source: frontend/src/style.css — .secondary; return/restart action.",
+      "html": "<button class=\"ds-secondary\">Retour à l’accueil</button>",
+      "css": ".ds-secondary{display:inline-flex;align-items:center;justify-content:center;gap:20px;padding:14px 24px;min-height:50px;color:#fff1dc;border:1px solid #e87659;background:#a93428;font:800 24px/1.1 \"Barlow Condensed\",sans-serif;text-transform:uppercase;letter-spacing:.03em;border-radius:0;box-shadow:inset 0 2px 0 #fca1853d,inset 0 -3px 0 #451b1480,0 6px 18px #090b0960;cursor:pointer;transition:background-color 150ms,border-color 150ms;background:#30362b;border-color:#7e8566;font-size:20px}.ds-secondary:hover{background:#444c39;border-color:#c3c99e}.ds-secondary:focus-visible{outline:3px solid #f4c782;outline-offset:5px;}.ds-secondary:active{box-shadow:inset 0 3px 6px #090b0980}.ds-secondary:disabled{opacity:.45;cursor:default}@media(prefers-reduced-motion:reduce){.ds-primary,.ds-secondary,.ds-utility,.ds-score-submit{transition:none}}"
+    },
+    {
+      "name": "Utility action",
+      "kind": "button",
+      "refersTo": "button-utility",
+      "description": "Source: frontend/src/style.css — .utility and button svg; fullscreen control in the top bar.",
+      "html": "<button class=\"ds-utility\" aria-pressed=\"false\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M9 3H3v6m12-6h6v6M3 15v6h6m12-6v6h-6\"/></svg>Plein écran</button>",
+      "css": ".ds-utility{display:inline-flex;gap:10px;align-items:center;justify-content:center;background:transparent;border:1px solid transparent;color:var(--ink,#e9e3d4);padding:9px 10px;font:600 16px Barlow,sans-serif;min-height:42px;border-radius:0;cursor:pointer;transition:background-color 150ms,border-color 150ms}.ds-utility svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;flex-shrink:0}.ds-utility:hover{color:#fff4de;background:#4c51393d;border-color:#9ba08466}.ds-utility:focus-visible{outline:3px solid #f4c782;outline-offset:5px;}.ds-utility:disabled{opacity:.45;cursor:default}@media(max-width:640px){.ds-utility{font-size:14px;gap:7px;padding:8px}}@media(prefers-reduced-motion:reduce){.ds-primary,.ds-secondary,.ds-utility,.ds-score-submit{transition:none}}"
+    },
+    {
+      "name": "Score field",
+      "kind": "input",
+      "refersTo": "score-field",
+      "description": "Source: frontend/src/style.css — form label, .input-row and input; ScoreForm.jsx.",
+      "html": "<label class=\"ds-field-label\" for=\"ds-player\">Pseudo</label><input class=\"ds-field\" id=\"ds-player\" name=\"player\" maxlength=\"24\" autocomplete=\"nickname\" required>",
+      "css": ".ds-field-label{display:block;font:600 16px Barlow,sans-serif;color:var(--ink,#e9e3d4);margin-bottom:9px}.ds-field{min-width:0;padding:13px 14px;font:400 17px Barlow,sans-serif;border:1px solid #929978;color:#f0ebdc;background:#0f150d;border-radius:0;caret-color:#f8735d}.ds-field:focus-visible{outline:3px solid #f4c782;outline-offset:5px;}"
+    },
+    {
+      "name": "Score submit",
+      "kind": "button",
+      "refersTo": "score-submit",
+      "description": "Source: frontend/src/style.css — .input-row button; compact form action.",
+      "html": "<button class=\"ds-score-submit\" type=\"submit\">Enregistrer le score</button>",
+      "css": ".ds-score-submit{padding:12px 16px;background:#a93427;border:1px solid #ed8a6b;color:#fff1dc;font:600 16px Barlow,sans-serif;border-radius:0;cursor:pointer;transition:background-color 150ms,border-color 150ms}.ds-score-submit:hover{background:#c24633}.ds-score-submit:focus-visible{outline:3px solid #f4c782;outline-offset:5px;}.ds-score-submit:disabled{opacity:.45;cursor:default}@media(prefers-reduced-motion:reduce){.ds-primary,.ds-secondary,.ds-utility,.ds-score-submit{transition:none}}"
+    },
+    {
+      "name": "Menu panel",
+      "kind": "card",
+      "refersTo": "menu-panel",
+      "description": "Source: frontend/src/style.css — .menu-panel; pause/result container, with its real heading and paragraph.",
+      "html": "<section class=\"ds-menu\"><h2>En pause</h2><p>Soufflez un instant. Le secteur peut attendre.</p></section>",
+      "css": ".ds-menu{width:min(100%,580px);padding:30px 34px;background:#20251cef;color:var(--ink,#e9e3d4);border:1px solid #858b67;box-shadow:0 20px 70px #030603aa,inset 0 2px 0 #bdc49322;font-family:Barlow,sans-serif}.ds-menu>h2{font:800 clamp(46px,6vw,72px)/1 \"Barlow Condensed\",sans-serif;text-transform:uppercase;color:#f28669;margin:0 0 12px}.ds-menu>p{color:#d3d6c0;line-height:1.5;font-size:17px;margin:0 0 24px}@media(max-width:640px){.ds-menu{padding:24px 20px}.ds-menu>h2{font-size:48px}}"
+    },
+    {
+      "name": "Player HUD",
+      "kind": "custom",
+      "refersTo": "player-hud",
+      "description": "Source: frontend/src/style.css — .hud, .hud-cell, .health-cell, .weapon-cell and .mission-cell; Hud.jsx. Preview uses the real five cells and mobile reduction.",
+      "html": "<footer class=\"ds-hud\" aria-label=\"État du joueur\"><div class=\"ds-hud-cell ds-weapon\"><span>Arme</span><strong>Pistolet</strong><small>Clic gauche / Espace</small></div><div class=\"ds-hud-cell\"><span>Munitions</span><strong aria-label=\"Illimitées\">∞</strong><small>Illimitées</small></div><div class=\"ds-hud-cell ds-health\"><label for=\"ds-health\">Vie</label><strong>3<small> / 3</small></strong><progress id=\"ds-health\" value=\"3\" max=\"3\"></progress></div><div class=\"ds-hud-cell\"><span>Ennemi</span><strong>2<small> PV</small></strong><small>Hostile</small></div><div class=\"ds-hud-cell ds-mission\"><span>Objectif</span><strong>La sortie</strong><small>Survivez. Explorez. Sortez.</small></div></footer>",
+      "css": ".ds-hud{height:var(--hud-height,124px);display:grid;grid-template-columns:1.15fr .8fr 1.2fr .8fr 1.15fr;background:repeating-linear-gradient(0deg,#0000000a 0 1px,transparent 1px 4px),linear-gradient(#515344,#292d24 20%,#373d2d 90%,#1b2017);border-top:3px solid #888a71;box-shadow:0 -8px 32px #080a0870;font-family:Barlow,sans-serif}.ds-hud-cell{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:10px 12px;border-right:1px solid #757a5866;min-width:0}.ds-hud-cell:last-child{border-right:0}.ds-hud-cell>span,.ds-hud-cell>label{text-transform:uppercase;font:800 17px/1 \"Barlow Condensed\",sans-serif;color:#d2d3ba;letter-spacing:.07em}.ds-hud-cell>strong{font:800 47px/.95 \"Barlow Condensed\",sans-serif;color:#f0d29c;text-shadow:1px 2px 1px #15190e;font-variant-numeric:tabular-nums}.ds-hud-cell>small{font-size:12px;color:#d5d6bc;line-height:1.3;text-align:center}.ds-hud-cell strong small{font-size:24px;color:#bdc5a6}.ds-weapon>strong,.ds-mission>strong{font-size:32px;text-transform:uppercase}.ds-health>strong{color:#ff8767}.ds-health progress{width:min(100%,128px);height:6px;border:none;background:#171d13;accent-color:#ed8060;margin-top:3px}.ds-health progress::-webkit-progress-bar{background:#171d13}.ds-health progress::-webkit-progress-value{background:#ed8060}.ds-health progress::-moz-progress-bar{background:#ed8060}@media(max-width:900px){.ds-hud-cell>strong{font-size:40px}.ds-weapon>strong,.ds-mission>strong{font-size:26px}}@media(max-width:640px){.ds-hud{height:104px;grid-template-columns:1fr 1fr 1fr}.ds-weapon,.ds-mission{display:none}.ds-hud-cell>strong{font-size:38px}.ds-hud-cell>span,.ds-hud-cell>label{font-size:16px}}"
+    },
+    {
+      "name": "Keyboard hint",
+      "kind": "custom",
+      "description": "Source: frontend/src/style.css — .commands > span and kbd; command legend rather than an interactive chip.",
+      "html": "<span class=\"ds-command\"><kbd>ZQSD</kbd> / <kbd>WASD</kbd> Marcher</span>",
+      "css": ".ds-command{display:inline-flex;gap:7px;align-items:center;flex-wrap:wrap;color:#c0c5ae;font:400 14px/1.6 Barlow,sans-serif}.ds-command kbd{display:inline-block;padding:2px 5px;border:1px solid #7d8565;background:#22281d;color:#eee8d5;font:600 12px/1.3 Barlow,sans-serif;white-space:nowrap}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Ambiance du jeu Doom — premier Doom (1993)",
+    "overview": "« Ambiance du jeu Doom » est la direction confirmée : le premier Doom (1993) fournit le langage du FPS rétro. L’acier olive, le graphite, le rouge braise et les caractères condensés donnent aux menus et au HUD le même caractère que le secteur exploré.\n\nLe décor est pixelisé ; les commandes restent du texte HTML net. Les titres sont massifs, les surfaces carrées et les informations de jeu concentrées dans une barre basse. Le jeu occupe la fenêtre et propose le plein écran natif. Les menus de pause et de résultat se superposent au niveau en gardant le HUD visible.\n\nLes images du couloir et du pistolet sont des créations originales générées, avec provenance à côté des fichiers dans `frontend/public/art/`. Les textures industrielles du niveau sont produites dans le projet. Cette direction ne fournit aucune autorisation de reprendre les assets originaux de Doom.",
+    "keyCharacteristics": [
+      "Acier olive et graphite, accents rouge braise, réussite et sortie vertes.",
+      "Titres Barlow Condensed lourds ; texte courant Barlow lisible.",
+      "Angles droits, filets et biseaux sombres, profondeur industrielle.",
+      "Canvas pleine fenêtre, HUD bas et menus superposés.",
+      "Art pixelisé original ; focus clavier visible et mouvement réduit respecté."
+    ],
+    "rules": [
+      {
+        "name": "The Mission Color Rule",
+        "body": "Le vert signale la sortie et la réussite ; le rouge porte les actions, les menaces et la perte de vie. Le libellé complète toujours le code couleur.",
+        "section": "colors"
+      },
+      {
+        "name": "The Live View Rule",
+        "body": "En jeu, la vue remplit l’espace au-dessus du HUD ; pause et résultat se placent devant elle sans masquer la barre d’état.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do conserver les deux familles Barlow auto-hébergées et leur licence OFL.",
+      "Do garder la hiérarchie entre action principale rouge, action secondaire olive et commande utilitaire transparente.",
+      "Do conserver le focus visible, les messages textuels, les états désactivés et le respect de prefers-reduced-motion.",
+      "Do préserver les pixels de la vue et de l’arme avec image-rendering: pixelated.",
+      "Do accompagner chaque nouvel asset raster livré de sa provenance."
+    ],
+    "donts": [
+      "Don’t remplacer les surfaces carrées par des pilules ou des cartes arrondies.",
+      "Don’t étendre la palette vers le néon bleu ou violet du cyberpunk moderne.",
+      "Don’t copier de sprites, textures ou logos du Doom original.",
+      "Don’t transformer le HUD et les messages de jeu en éléments purement décoratifs."
+    ]
+  }
+}

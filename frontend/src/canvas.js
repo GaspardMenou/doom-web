@@ -3,20 +3,38 @@ import {PointerLockControls} from 'three/addons/controls/PointerLockControls.js'
 import {advance, newGame, shoot} from './game.js';
 import {bindKeyboard} from './input.js';
 import {createRoom} from './room.js';
-import {hitsTarget} from './shooting.js';
+import {castShot} from './shooting.js';
 
 export function mountGame(canvas, onState = () => {}) {
   const renderer = new THREE.WebGLRenderer({canvas});
-  renderer.setSize(canvas.width, canvas.height, false);
   const scene = createRoom();
   const target = scene.getObjectByName('target');
+  const tracer = new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]),
+    new THREE.LineBasicMaterial({color: '#ffe17a', transparent: true}),
+  );
+  tracer.visible = false;
+  scene.add(tracer);
   const camera = new THREE.PerspectiveCamera(75, canvas.width / canvas.height, 0.05, 40);
   camera.rotation.order = 'YXZ';
   const controls = new PointerLockControls(camera, canvas);
   const keyboard = bindKeyboard(canvas);
   let state = newGame();
   let previous = null;
+  let shotUntil = 0;
   camera.position.set(state.player.x, 1.6, state.player.z);
+
+  function resize() {
+    const width = canvas.parentElement.clientWidth || 640;
+    const height = canvas.parentElement.clientHeight || 400;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(width, height, false);
+    camera.aspect = width / height;
+    camera.updateProjectionMatrix();
+  }
+  const resizeObserver = new ResizeObserver(resize);
+  resizeObserver.observe(canvas.parentElement);
+  resize();
 
   function publish(status, feedback = {}) {
     onState({
@@ -34,10 +52,11 @@ export function mountGame(canvas, onState = () => {}) {
   function unlocked() {
     keyboard.clear();
     previous = null;
+    tracer.visible = false;
     publish('paused');
   }
   function pointerError() {
-    publish('paused', {error: 'La souris n’a pas pu être capturée. Cliquez sur Entrer pour réessayer.'});
+    publish('paused', {error: 'La souris n’a pas pu être capturée. Cliquez sur Reprendre pour réessayer.'});
   }
   async function resume() {
     if (state.status !== 'playing') return;
@@ -51,15 +70,29 @@ export function mountGame(canvas, onState = () => {}) {
   function pause() {
     keyboard.clear();
     previous = null;
+    tracer.visible = false;
     if (controls.isLocked) controls.unlock();
   }
   function visibility() {
     if (document.hidden) pause();
   }
 
+  function showShot(impact) {
+    const distance = impact?.distance ?? 15;
+    const start = new THREE.Vector3(0, -0.2, -Math.min(0.3, distance / 2)).applyMatrix4(camera.matrixWorld);
+    const end = impact?.point ?? camera.position.clone().addScaledVector(camera.getWorldDirection(new THREE.Vector3()), 15);
+    tracer.geometry.setFromPoints([start, end]);
+    tracer.geometry.computeBoundingSphere();
+    tracer.material.opacity = 1;
+    tracer.visible = true;
+    shotUntil = performance.now() + 100;
+  }
+
   function fire() {
     if (!controls.isLocked || state.status !== 'playing') return;
-    const hit = hitsTarget(camera, scene.children, target);
+    const impact = castShot(camera, scene.children);
+    const hit = impact?.object === target;
+    showShot(impact);
     state = shoot(state, hit);
     target.visible = state.targetHealth > 0;
     target.material.color.set(state.targetHealth === 1 ? '#d48228' : '#b22f4a');
@@ -99,6 +132,10 @@ export function mountGame(canvas, onState = () => {}) {
         if (state.status !== 'playing') pause();
       }
     }
+    if (tracer.visible) {
+      tracer.material.opacity = Math.max(0, (shotUntil - now) / 100);
+      tracer.visible = tracer.material.opacity > 0;
+    }
     renderer.render(scene, camera);
   });
 
@@ -116,6 +153,7 @@ export function mountGame(canvas, onState = () => {}) {
       publish('paused');
     },
     destroy() {
+      resizeObserver.disconnect();
       renderer.setAnimationLoop(null);
       controls.removeEventListener('lock', locked);
       controls.removeEventListener('unlock', unlocked);
@@ -129,6 +167,7 @@ export function mountGame(canvas, onState = () => {}) {
       document.removeEventListener('pointerlockerror', pointerError);
       for (const object of scene.children) {
         object.geometry.dispose();
+        object.material.map?.dispose();
         object.material.dispose();
       }
       renderer.dispose();

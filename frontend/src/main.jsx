@@ -1,23 +1,30 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {createRoot} from 'react-dom/client';
+import {flushSync} from 'react-dom';
 import {mountGame} from './canvas.js';
 import {createApi} from './api.js';
-import {PLAYER_MAX_HEALTH} from './game.js';
 import {scorePoints} from './score.js';
 import {ScoreForm} from './ScoreForm.jsx';
+import {Hud} from './Hud.jsx';
+import {LevelMap} from './LevelMap.jsx';
+import {toggleFullscreen} from './fullscreen.js';
 import './style.css';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8001';
 const request = createApi(apiUrl);
 
 function App() {
+  const shell = useRef(null);
   const canvas = useRef(null);
   const game = useRef(null);
   const scoresRequest = useRef(null);
   const [state, setState] = useState({status: 'paused'});
+  const [home, setHome] = useState(true);
   const [scores, setScores] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [fullscreenError, setFullscreenError] = useState('');
 
   useEffect(() => {
     try {
@@ -49,40 +56,105 @@ function App() {
     return () => scoresRequest.current?.abort();
   }, []);
 
+  useEffect(() => {
+    function changed() {
+      setFullscreen(document.fullscreenElement === shell.current);
+      game.current?.pause();
+    }
+    document.addEventListener('fullscreenchange', changed);
+    return () => document.removeEventListener('fullscreenchange', changed);
+  }, []);
+
+  async function changeFullscreen() {
+    game.current?.pause();
+    try {
+      await toggleFullscreen(shell.current);
+      setFullscreenError('');
+    } catch {
+      setFullscreenError('Le plein écran est indisponible. Vous pouvez continuer dans cette fenêtre.');
+    }
+  }
+
+  function start() {
+    if (!game.current) return;
+    // La capture nécessite un Canvas visible et le clic utilisateur.
+    flushSync(() => {
+      game.current.restart();
+      setHome(false);
+    });
+    game.current.resume();
+  }
+
+  function goHome() {
+    game.current?.pause();
+    setHome(true);
+  }
+
   const playing = state.status === 'playing';
   const won = state.status === 'won';
   const lost = state.status === 'lost';
   const unavailable = state.status === 'unavailable';
-  const playerHealth = state.playerHealth ?? PLAYER_MAX_HEALTH;
-  return <main>
-    <h1>Sprint 5 : enregistrer son résultat.</h1>
-    <p id="commands">ZQSD, WASD ou les flèches pour marcher. Souris pour viser. Clic gauche ou Espace pour tirer. Échap pour mettre en pause.</p>
-    <div className="game-layout"><section aria-label="Le jeu">
+  return <main ref={shell} className={`app-shell ${home ? 'is-home' : 'is-game'}`}>
+    <header className="topbar">
+      <span className="brand">D<span aria-hidden="true">/</span>W <small>DOOM WEB</small></span>
+      <div className="topbar-actions">
+        {!home && playing && <button className="utility" onClick={() => game.current.pause()}>Pause <kbd>Échap</kbd></button>}
+        <button className="utility fullscreen-button" onClick={changeFullscreen} aria-pressed={fullscreen}>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H3v6m12-6h6v6M3 15v6h6m12-6v6h-6" /></svg>
+          {fullscreen ? 'Quitter le plein écran' : 'Plein écran'}
+        </button>
+      </div>
+    </header>
+    {fullscreenError && <p role="alert" className="error fullscreen-error">{fullscreenError}</p>}
+
+    {home && <div className="home-content">
+      <section className="home-grid" aria-label="Accueil">
+        <div className="mission-intro">
+          <h1>Doom <span>Web</span></h1>
+          <h2>Une seule issue. Restez en vie.</h2>
+          <p>Traversez le secteur, évitez l’ennemi et atteignez la sortie verte. Ou faites parler la poudre.</p>
+          <button className="primary play-button" autoFocus disabled={unavailable} onClick={start}>Jouer <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg></button>
+          <p className="mission-facts">3 PV au départ <span>·</span> Munitions illimitées <span>·</span> Solo</p>
+          {unavailable && <p role="alert" className="error">{state.error}</p>}
+        </div>
+        <LevelMap />
+      </section>
+      <section className="score-panel" aria-label="Classement">
+        <div className="list-heading"><h2>Tableau des survivants <span>Top 10</span></h2><button className="utility" disabled={loading} onClick={() => loadScores()}>Recharger</button></div>
+        {loading ? <p className="empty-score">Lecture du classement…</p> : scores.length === 0 ? <p className="empty-score">Aucun score pour le moment. Terminez une partie pour inscrire votre nom.</p> : <ol>{scores.map(score => <li key={score.id}><span>{score.player}</span><strong>{score.points}<small> PTS</small></strong></li>)}</ol>}
+        {error && <p role="alert" className="error">{error}</p>}
+      </section>
+      <p className="score-disclaimer">Classement de démonstration. Scores déclarés par les joueurs.</p>
+    </div>}
+
+    <section className="game-screen" aria-label="Le jeu" hidden={home}>
       <div className="viewport">
-        <canvas ref={canvas} width="640" height="400" tabIndex="0" aria-label="Pièce en vue à la première personne. Cliquez pour entrer." aria-describedby="commands" />
-        <svg className="crosshair" viewBox="0 0 20 20" aria-hidden="true">
-          <path d="M10 2v16M2 10h16" stroke="#102b29" strokeWidth="4" />
-          <path d="M10 2v16M2 10h16" stroke="white" strokeWidth="2" />
-        </svg>
+        <canvas ref={canvas} width="640" height="400" tabIndex={home || !playing ? -1 : 0} aria-label="Niveau en vue à la première personne. Cliquez pour reprendre." aria-describedby="commands" />
+        {playing && <>
+          <svg className="crosshair" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v5m0 8v5M3 12h5m8 0h5" /></svg>
+          <img className="weapon-view" src="/art/pistol-view.png" alt="" />
+        </>}
       </div>
-      <div className="controls">
-        <button disabled={playing || won || lost || unavailable} onClick={() => game.current?.resume()}>Entrer dans la pièce</button>
-        <button disabled={!playing} onClick={() => game.current.pause()}>Pause</button>
-        <button disabled={unavailable} onClick={() => game.current.restart()}>Recommencer</button>
-      </div>
-      <p className="hint">Passez à droite du mur intérieur, puis rejoignez la zone verte. Vous pouvez éviter l’ennemi rouge ou le vaincre en deux impacts. À 1 m ou moins, il inflige 1 dégât par seconde. Munitions illimitées.</p>
-      {!unavailable && <p><label htmlFor="player-health">Vie : {playerHealth} / {PLAYER_MAX_HEALTH}</label> <progress id="player-health" value={playerHealth} max={PLAYER_MAX_HEALTH} /></p>}
-      <p role="status">{won ? 'Victoire — vous avez atteint la sortie !' : lost ? 'Défaite — vous n’avez plus de vie. Cliquez sur Recommencer.' : playing ? 'Partie en cours.' : unavailable ? 'Affichage 3D indisponible.' : 'En pause — entrez dans la pièce pour reprendre.'}</p>
-      {!unavailable && <p role="status">{state.targetHealth === 0 ? 'Ennemi vaincu !' : `Ennemi : ${state.targetHealth ?? '…'} PV.`} {state.lastShot}</p>}
-      {state.error && <p role="alert" className="error">{state.error}</p>}
-      {(won || lost) && <ScoreForm points={scorePoints(state)} request={request} onSaved={loadScores} />}
-    </section><aside>
-      <div className="list-heading"><h2>Top 10</h2><button className="secondary" disabled={loading} onClick={() => loadScores()}>Recharger</button></div>
-      {loading ? <p>Chargement…</p> : scores.length === 0 ? <p>Aucun score pour le moment.</p> : <ol>{scores.map(score => <li key={score.id}><span>{score.player}</span><strong>{score.points}</strong></li>)}</ol>}
-      <p className="hint">Ce classement de démonstration accepte les scores déclarés par le client.</p>
-    </aside></div>
-    {error && <p role="alert" className="error">{error}</p>}
-    <footer>Backend : <code>{apiUrl}</code></footer>
+      <p className="game-message" role="status">{won ? 'Victoire : vous avez atteint la sortie !' : lost ? 'Défaite : vous n’avez plus de vie.' : playing ? (state.lastShot || 'Objectif : rejoignez la sortie verte.') : 'En pause : la partie vous attend.'}</p>
+      <Hud state={state} />
+      {!playing && !home && <section className={`game-overlay${won ? ' has-won' : ''}`} aria-label={won || lost ? 'Fin de partie' : 'Menu de pause'}>
+        <div className="menu-panel">
+          <h2>{won ? 'Victoire' : lost ? 'Défaite' : unavailable ? 'Signal perdu' : 'En pause'}</h2>
+          <p>{won ? 'Vous avez trouvé la sortie. Inscrivez votre nom.' : lost ? 'Le secteur a eu raison de vous. Retentez votre chance.' : 'Soufflez un instant. Le secteur peut attendre.'}</p>
+          {state.error && <p role="alert" className="error">{state.error}</p>}
+          {(won || lost) && <ScoreForm points={scorePoints(state)} request={request} onSaved={loadScores} />}
+          <div className="menu-actions">
+            {!won && !lost && !unavailable && <button className="primary" autoFocus onClick={() => game.current.resume()}>Reprendre</button>}
+            {!unavailable && <button className={won || lost ? 'primary' : 'secondary'} autoFocus={won || lost} onClick={start}>{won || lost ? 'Rejouer' : 'Recommencer'}</button>}
+            <button className="secondary" onClick={goHome}>Retour à l’accueil</button>
+          </div>
+        </div>
+      </section>}
+    </section>
+
+    <div id="commands" className="commands" hidden={!home && playing}>
+      <span><kbd>ZQSD</kbd> / <kbd>WASD</kbd> Marcher</span><span><kbd>Souris</kbd> Viser</span><span><kbd>Clic</kbd> / <kbd>Espace</kbd> Tirer</span><span><kbd>Échap</kbd> Pause</span>
+    </div>
   </main>;
 }
 

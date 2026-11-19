@@ -1,0 +1,13 @@
+{
+  "asset": "sector-entry.webp",
+  "mode": "built-in",
+  "intent": "generate",
+  "tool": "image_gen__imagegen",
+  "generated_at": "2026-11-19 15:43:40 UTC",
+  "prompt": "Use case: stylized-concept\nAsset type: original background art for the title screen of a retro first-person shooter web game, not a UI mockup.\nCreate one wide 16:9 image, approximately 1600 by 900 pixels. An original industrial space-base corridor with the visual language of a 1993 PC first-person shooter: chunky low-poly architecture rendered as deliberate pixel art, visible dithered shading, low-resolution worn steel and warm olive metal panels, rusty bolts, grime and a few hazard stripes. The left 45 percent must stay very dark, quiet negative space behind title-screen interface text: a charcoal-black entrance recess with only faint industrial surface detail. Put the visual drama in the right 55 percent: a massive heavy blast-door structure and strong diagonal corridor perspective, bulky asymmetrical steel supports, red emergency lights on the right casting muted rust-red illumination, smoky dark ceilings and atmospheric depth. Original artwork, evocative of early 1990s game cover and in-game environmental art, with crisp pixel clusters and an intentionally limited palette. Base colors charcoal and warm olive around #171914, with rust-red accents. Opaque full background. No text, no lettering, no logos, no HUD, no interface panels, no weapon, no people, no monsters, no watermarks. Avoid modern neon cyberpunk, smooth glossy sci-fi, purple/blue neon, photorealism and generic cinematic concept-art polish.",
+  "dimensions": {
+    "width": 1672,
+    "height": 941
+  },
+  "post_processing": "Converted native PNG output to WebP with cwebp -q 88 -m 6; no crop or visual edits."
+}

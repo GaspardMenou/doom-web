@@ -1,0 +1,15 @@
+{
+  "asset": "pistol-view.png",
+  "created_at": "2026-11-19",
+  "mode": "built-in image generation",
+  "tool": "image_gen__imagegen",
+  "transparent_background": true,
+  "original_design": true,
+  "prompt": "Use case: stylized-concept.\nAsset type: one original first-person shooter weapon overlay sprite, square 1024 x 1024 pixels, with genuine alpha transparency.\nPrimary request: an original retro 1993 PC FPS pixel-art pistol seen from the player's own eyes, centered and pointing forward toward the upper center vanishing point. Rear-and-top view of a compact gunmetal steel semiautomatic pistol held in two olive military-gloved hands. The hands and short forearms are cropped by the lower edge of the image.\nStyle/medium: credible hand-painted low-resolution 1993 game sprite, coarse clearly visible square pixel clusters, limited roughly 32-color palette, dark ink-like pixel outlines, stepped highlights and shaded metal. Doom-inspired visual era, but a new original weapon design, never a copied game asset. No smooth modern illustration or 3D-rendered finish.\nComposition/framing: the complete pistol and two hands form one compact centered silhouette. The barrel points toward the top center. Hands flare outward across about 80 percent of the canvas width in the lower half. The weapon and hands should fill the frame tightly enough to read well as a bottom-center game overlay, with no huge empty margins, and the forearms end naturally at the bottom canvas boundary. No profile or side view.\nColor palette: charcoal and gunmetal steel, muted olive gloves, restrained warm gray highlights.\nScene/backdrop: transparent everywhere outside the weapon and hands; clean genuine alpha cutout, including the upper and side negative spaces.\nConstraints: only the pistol, hands, and cropped forearms. No environment, floor, sky, shadows cast on a backdrop, text, labels, numbers, logos, watermark, decorative frame, muzzle flash, smoke, blood, or extra objects.",
+  "output": {
+    "width": 1254,
+    "height": 1254,
+    "format": "PNG",
+    "postprocessing": "None; copied without altering the generated alpha channel."
+  }
+}

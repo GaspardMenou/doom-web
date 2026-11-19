@@ -1,6 +1,6 @@
 # Doom Web
 
-Projet de FPS rétro inspiré du premier Doom : React pour l'interface, Three.js dans un Canvas pour le jeu, FastAPI + SQLAlchemy pour les scores. Les cinq premiers sprints permettent d'explorer un petit niveau 3D, tirer, survivre à un ennemi, atteindre la sortie et enregistrer son résultat dans le classement.
+Projet de FPS rétro inspiré du premier Doom : React pour l'interface, Three.js dans un Canvas pour le jeu, FastAPI + SQLAlchemy pour les scores. Les six premiers sprints permettent d'explorer un petit niveau 3D, tirer, survivre à un ennemi, atteindre la sortie et enregistrer son résultat, avec un accueil, des menus et un habillage FPS rétro en plein écran.
 
 ## Première version convenue
 
@@ -18,7 +18,7 @@ Le backend fourni savait lire un classement vide. Le sprint 5 ajoute l'enregistr
 
 Dans `backend/` : `uv sync --locked`, `uv run pytest -q` (21 tests), puis `uv run uvicorn scores:create_app --factory --reload --port 8001`.
 
-Dans `frontend/` : `npm ci`, `npm test` (74 tests), puis `npm run dev`. Ouvrir `http://127.0.0.1:5175`. Chaque terminal reste dans son dossier.
+Dans `frontend/` : `npm ci`, `npm test` (82 tests), puis `npm run dev`. Ouvrir `http://127.0.0.1:5175`. Chaque terminal reste dans son dossier.
 
 ## Sprint 1 : comprendre dans l'ordre
 
@@ -119,6 +119,37 @@ uv run pytest -q tests/test_scores.py::test_post_score_then_read_leaderboard
 Le test POST a échoué avec 405 avant l'ajout de la route. Le test du calcul a échoué avant la création de `score.js`, et le contrôle navigateur a constaté l'absence du champ Pseudo après une victoire avant l'ajout du formulaire. Vérification : 74 tests front, 21 tests back et build validés. Le contrôle navigateur utilise une base temporaire isolée et couvre victoire à 90 points, défaite à 0, pseudo blanc, double soumission, erreur puis nouvel essai, échec de lecture après sauvegarde, redémarrage pendant un POST et formulaire neuf à la partie suivante. La capture de la souris et les erreurs HTTP sont simulées ; les sauvegardes réussies utilisent le vrai backend. Le formulaire a été vérifié sur ordinateur et écran de 390 px, sans débordement. L'utilisateur a confirmé l'enregistrement et la relecture du classement après rechargement de la page.
 
 Limites : classement de démonstration sans comptes, avec scores déclarés par le client. Si le serveur enregistre un POST mais que sa réponse réseau est perdue, un nouvel essai peut créer un doublon ; une clé d'idempotence sera nécessaire pour garantir l'unicité dans ce cas.
+
+## Sprint 6 : accueil, menus et ambiance FPS rétro
+
+L'accueil présente la mission, le plan réel du niveau, les commandes et le classement. **Jouer** lance une nouvelle partie et capture la souris. Le Canvas occupe toute la fenêtre, avec un HUD pour la vie, l'arme, les munitions et l'ennemi. Le bouton **Plein écran** demande aussi le mode natif du navigateur ; s'il est refusé, une erreur explique que la partie reste jouable dans la fenêtre.
+
+- **Échap / Pause** fige les déplacements, le combat et le tracé du tir. **Reprendre** garde la position et les PV.
+- **Recommencer**, en pause, remet la partie à zéro puis reprend. Après victoire ou défaite, le même parcours s'appelle **Rejouer**.
+- **Retour à l'accueil** met le jeu en pause et retire le formulaire de résultat. Le prochain **Jouer** repart avec 3 PV et un ennemi neuf.
+- Le classement et la sauvegarde du sprint 5 restent disponibles ; les règles et les routes de score sont conservées.
+
+La refonte demandée utilise ui-ux-pro-max, design-taste-frontend et Impeccable : acier olive, rouge braise, titres Barlow Condensed, texte Barlow, menus carrés et HUD de FPS des années 90. Les fontes et leurs licences sont dans `frontend/public/fonts/`, sans chargement distant à l'exécution. `PRODUCT.md`, `DESIGN.md` et `.impeccable/surfaces/frontend-src-main-jsx.md` conservent les décisions pour les prochains sprints.
+
+Pour comprendre dans l'ordre :
+
+1. **Accueil ou partie.** Dans `main.jsx`, le booléen `home` choisit l'écran. `goHome()` appelle d'abord `pause()`. `start()` remet le jeu à zéro et rend le Canvas visible avant d'appeler `resume()` ; `flushSync()` force ce petit changement d'affichage à se terminer pendant le clic utilisateur, avant le focus et la capture de souris.
+2. **Plein écran.** Lire le premier test de `frontend/src/fullscreen.test.js`, puis les cinq lignes de `fullscreen.js`. La fonction demande le plein écran sur l'élément du jeu ou le quitte s'il est actif. Le composant affiche l'erreur et garde la partie accessible si le navigateur refuse.
+3. **Canvas à la bonne taille.** Dans `canvas.js`, `ResizeObserver` observe la zone de jeu. `resize()` adapte le rendu et le rapport largeur/hauteur de la caméra. Le ratio de pixels est plafonné à 2 ; le nettoyage libère l'observer et les textures.
+4. **Afficher le tir.** Les deux premiers tests de `shooting.test.js` vérifient le point du premier impact et l'absence d'impact dans le vide. `castShot()` renvoie ce résultat, `hitsTarget()` conserve sa réponse booléenne. `showShot()` dans `canvas.js` dessine une ligne lumineuse jusqu'à l'impact, puis la fait disparaître en 100 ms. Les dégâts restent immédiats et la ligne ne bloque pas les tirs suivants.
+5. **Lire les visuels séparément.** `Hud.jsx` affiche les données déjà connues. `LevelMap.jsx` dessine le plan depuis les coordonnées du niveau. `textures.js` crée des textures industrielles déterministes, utilisées par `room.js`, sans changer les murs ni les collisions.
+
+```sh
+# Depuis frontend/
+node --test src/fullscreen.test.js
+node --test src/shooting.test.js src/textures.test.js
+```
+
+TDD : le contrôle navigateur a constaté l'absence de Jouer avant l'accueil ; les tests plein écran, impact et textures ont été observés en échec avant leur implémentation. Les 82 tests front et le build passent. Le scénario `frontend/tests/menus.playwright.js` est exécutable avec l'outil Playwright `browser_run_code_unsafe` et son argument `filename` ; il est distinct des tests Node lancés par `npm test`. Il couvre accueil, pause avec joueur blessé et scène immobile, reprise sans reset, retour, nouvelle partie, victoire, formulaire, rejouer et redimensionnement. Il vérifie aussi le tracé par lecture du Canvas : 0 pixel jaune avant, 381 pendant le tir, 0 après. Ce scénario simule seulement la capture native de souris et n'écrit aucun score de test.
+
+L'utilisateur a confirmé dans son navigateur que le plein écran natif, les tirs et les menus fonctionnent. Le navigateur automatisé refuse le plein écran avec « not granted » : son message de repli est vérifié, tandis que le mode natif est validé manuellement. Les captures couvrent accueil et résultat en 1440 px et 390 px, ainsi que jeu et pause sur ordinateur.
+
+Deux illustrations originales ont été générées avec l'outil natif imagegen : `public/art/sector-entry.webp` pour l'accueil et `public/art/pistol-view.png` pour l'arme. Leurs prompts exacts et provenances sont conservés à côté des images ; aucun asset original de Doom n'est utilisé. Les textures du niveau sont produites par le code. Limites conservées : ennemi cubique, niveau fixe, tirs instantanés avec effet visuel plutôt que projectiles simulés, commandes clavier/souris sur ordinateur.
 
 ## Premier trajet complet
 

@@ -20,15 +20,6 @@
         ],
         "createdAt": "2026-11-19T13:27:07.740Z",
         "reason": "Agent: rapport de navigation généré par graphify update, ignoré par Git et absent du build frontend ; exception limitée à cet artefact généré."
-      },
-      {
-        "rule": "overused-font",
-        "value": "arial",
-        "files": [
-          "frontend/src/style.css"
-        ],
-        "createdAt": "2026-11-19T13:42:35.515Z",
-        "reason": "Agent: police du starter conservée pour le prototype pédagogique TDD ; la demande utilisateur privilégie des changements simples et accepte un rendu provisoire."
       }
     ]
   }

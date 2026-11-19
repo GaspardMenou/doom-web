@@ -1,0 +1,45 @@
+name: doom-web
+
+services:
+  backend:
+    platform: linux/amd64
+    image: ghcr.io/gaspardmenou/doom-web-backend:${IMAGE_TAG:-latest}
+    build:
+      context: backend
+      labels:
+        org.opencontainers.image.source: https://github.com/GaspardMenou/doom-web
+    restart: unless-stopped
+    volumes:
+      - scores:/app/instance
+    healthcheck:
+      test: [CMD, /app/.venv/bin/python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/scores/', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  frontend:
+    platform: linux/amd64
+    image: ghcr.io/gaspardmenou/doom-web-frontend:${IMAGE_TAG:-latest}
+    build:
+      context: frontend
+      labels:
+        org.opencontainers.image.source: https://github.com/GaspardMenou/doom-web
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+        restart: true
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT:-8080}:8080"
+    networks:
+      default:
+        aliases:
+          - doom-web-frontend
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:8080/]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  scores:

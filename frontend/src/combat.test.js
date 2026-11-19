@@ -14,6 +14,8 @@ test('la partie démarre avec trois points de vie et un ennemi en face', () => {
 
 test('la boucle de jeu fait avancer l’ennemi sans modifier l’état précédent', () => {
   const state = newGame();
+  state.player.x = 3.5;
+  state.enemy.x = 3.5;
   const next = advance(state, {}, 0.05);
 
   assert.ok(Math.abs(next.enemy.z - (-1.95)) < 0.000001);

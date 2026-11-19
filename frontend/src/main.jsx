@@ -45,11 +45,12 @@ function App() {
   }, []);
 
   const playing = state.status === 'playing';
+  const won = state.status === 'won';
   const lost = state.status === 'lost';
   const unavailable = state.status === 'unavailable';
   const playerHealth = state.playerHealth ?? PLAYER_MAX_HEALTH;
   return <main>
-    <h1>Sprint 3 : poursuite et combat.</h1>
+    <h1>Sprint 4 : exploration et sortie.</h1>
     <p id="commands">ZQSD, WASD ou les flèches pour marcher. Souris pour viser. Clic gauche ou Espace pour tirer. Échap pour mettre en pause.</p>
     <div className="game-layout"><section aria-label="Le jeu">
       <div className="viewport">
@@ -60,13 +61,13 @@ function App() {
         </svg>
       </div>
       <div className="controls">
-        <button disabled={playing || lost || unavailable} onClick={() => game.current?.resume()}>Entrer dans la pièce</button>
+        <button disabled={playing || won || lost || unavailable} onClick={() => game.current?.resume()}>Entrer dans la pièce</button>
         <button disabled={!playing} onClick={() => game.current.pause()}>Pause</button>
         <button disabled={unavailable} onClick={() => game.current.restart()}>Recommencer</button>
       </div>
-      <p className="hint">Le cube rouge vous poursuit. À 1 m ou moins, il inflige 1 dégât par seconde. Deux impacts le vainquent. Munitions illimitées.</p>
+      <p className="hint">Passez à droite du mur intérieur, puis rejoignez la zone verte. Vous pouvez éviter l’ennemi rouge ou le vaincre en deux impacts. À 1 m ou moins, il inflige 1 dégât par seconde. Munitions illimitées.</p>
       {!unavailable && <p><label htmlFor="player-health">Vie : {playerHealth} / {PLAYER_MAX_HEALTH}</label> <progress id="player-health" value={playerHealth} max={PLAYER_MAX_HEALTH} /></p>}
-      <p role="status">{lost ? 'Défaite — vous n’avez plus de vie. Cliquez sur Recommencer.' : playing ? 'Partie en cours.' : unavailable ? 'Affichage 3D indisponible.' : 'En pause — entrez dans la pièce pour reprendre.'}</p>
+      <p role="status">{won ? 'Victoire — vous avez atteint la sortie !' : lost ? 'Défaite — vous n’avez plus de vie. Cliquez sur Recommencer.' : playing ? 'Partie en cours.' : unavailable ? 'Affichage 3D indisponible.' : 'En pause — entrez dans la pièce pour reprendre.'}</p>
       {!unavailable && <p role="status">{state.targetHealth === 0 ? 'Ennemi vaincu !' : `Ennemi : ${state.targetHealth ?? '…'} PV.`} {state.lastShot}</p>}
       {state.error && <p role="alert" className="error">{state.error}</p>}
     </section><aside>

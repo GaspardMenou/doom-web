@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import {ROOM_SIZE} from './game.js';
+import {EXIT, ROOM_SIZE, WALLS} from './level.js';
 
 export function createRoom() {
   const scene = new THREE.Scene();
@@ -30,6 +30,18 @@ export function createRoom() {
   wall(ROOM_SIZE, 0.2, 0, edge, '#9a8b73');
   wall(0.2, ROOM_SIZE, -edge, 0, '#738c9c');
   wall(0.2, ROOM_SIZE, edge, 0, '#85977a');
+  for (const obstacle of WALLS) {
+    wall(obstacle.width, obstacle.depth, obstacle.x, obstacle.z, '#a16f5d');
+  }
+
+  const exit = new THREE.Mesh(
+    new THREE.PlaneGeometry(EXIT.width, EXIT.depth),
+    new THREE.MeshBasicMaterial({color: '#2eab55'}),
+  );
+  exit.name = 'exit';
+  exit.rotation.x = -Math.PI / 2;
+  exit.position.set(EXIT.x, 0.02, EXIT.z);
+  scene.add(exit);
 
   const target = new THREE.Mesh(
     new THREE.BoxGeometry(1, 1, 1),

@@ -23,7 +23,7 @@ export function mountGame(canvas, onState = () => {}) {
       ...feedback,
       targetHealth: state.targetHealth,
       playerHealth: state.playerHealth,
-      status: state.status === 'lost' ? 'lost' : status,
+      status: state.status === 'playing' ? status : state.status,
     });
   }
   function locked() {
@@ -40,7 +40,7 @@ export function mountGame(canvas, onState = () => {}) {
     publish('paused', {error: 'La souris n’a pas pu être capturée. Cliquez sur Entrer pour réessayer.'});
   }
   async function resume() {
-    if (state.status === 'lost') return;
+    if (state.status !== 'playing') return;
     canvas.focus();
     try {
       await canvas.requestPointerLock();
@@ -58,7 +58,7 @@ export function mountGame(canvas, onState = () => {}) {
   }
 
   function fire() {
-    if (!controls.isLocked || state.status === 'lost') return;
+    if (!controls.isLocked || state.status !== 'playing') return;
     const hit = hitsTarget(camera, scene.children, target);
     state = shoot(state, hit);
     target.visible = state.targetHealth > 0;
@@ -90,12 +90,13 @@ export function mountGame(canvas, onState = () => {}) {
     previous = now;
     if (controls.isLocked) {
       const healthBefore = state.playerHealth;
+      const statusBefore = state.status;
       state = advance(state, {...keyboard.read(), angle: camera.rotation.y}, seconds);
       camera.position.set(state.player.x, 1.6, state.player.z);
       target.position.set(state.enemy.x, 1.6, state.enemy.z);
-      if (state.playerHealth !== healthBefore) {
+      if (state.playerHealth !== healthBefore || state.status !== statusBefore) {
         publish('playing');
-        if (state.status === 'lost') pause();
+        if (state.status !== 'playing') pause();
       }
     }
     renderer.render(scene, camera);

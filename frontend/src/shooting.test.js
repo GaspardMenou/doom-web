@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {BoxGeometry, GridHelper, Mesh, MeshBasicMaterial, PerspectiveCamera} from 'three';
 import {hitsTarget} from './shooting.js';
+import {createRoom} from './room.js';
 
 test('une cible devant le viseur est touchée avant le premier rendu', () => {
   const camera = new PerspectiveCamera(75, 1, 0.1, 100);
@@ -85,4 +86,16 @@ test('les déplacements de la caméra et de la cible sont pris en compte entre d
   assert.equal(hitsTarget(camera, [target], target), false);
   target.position.x = 2;
   assert.equal(hitsTarget(camera, [target], target), true);
+});
+
+test('dans le niveau réel, la cloison bloque le tir mais le passage le laisse passer', () => {
+  const scene = createRoom();
+  const target = scene.getObjectByName('target');
+  const camera = new PerspectiveCamera(75, 1, 0.1, 100);
+  camera.position.set(0, 1.6, 2);
+  assert.equal(hitsTarget(camera, scene.children, target), false);
+
+  camera.position.x = 3.5;
+  target.position.x = 3.5;
+  assert.equal(hitsTarget(camera, scene.children, target), true);
 });

@@ -1,24 +1,30 @@
+import {hasLineOfSight, moveInLevel} from './level.js';
+import {nextWaypoint} from './path.js';
+
 const SPEED = 1;
 const ATTACK_RANGE = 1;
 const ATTACK_DELAY = 1;
+const RADIUS = 0.5;
 
 export function advanceEnemy(previous, dt) {
-  // shortcut: poursuite directe dans une pièce vide ; adapter le trajet quand le niveau aura des obstacles.
   if (dt <= 0 || previous.targetHealth === 0 || previous.status !== 'playing') return previous;
 
-  const enemy = {...previous.enemy};
-  const dx = previous.player.x - enemy.x;
-  const dz = previous.player.z - enemy.z;
+  let enemy = {...previous.enemy};
+  const waypoint = nextWaypoint(enemy, previous.player, RADIUS);
+  const dx = waypoint.x - enemy.x;
+  const dz = waypoint.z - enemy.z;
   const distance = Math.hypot(dx, dz);
-  const step = Math.min(SPEED * dt, Math.max(0, distance - ATTACK_RANGE));
+  const playerDistance = Math.hypot(previous.player.x - enemy.x, previous.player.z - enemy.z);
+  const stoppingDistance = hasLineOfSight(enemy, previous.player) ? Math.max(0, playerDistance - ATTACK_RANGE) : Infinity;
+  const step = Math.min(SPEED * dt, distance, stoppingDistance);
   if (distance > 0) {
-    enemy.x += dx / distance * step;
-    enemy.z += dz / distance * step;
+    enemy = moveInLevel(enemy, dx / distance * step, dz / distance * step, RADIUS);
   }
 
   let playerHealth = previous.playerHealth;
   let attackCooldown = Math.max(0, previous.attackCooldown - dt);
-  if (distance - step <= ATTACK_RANGE + 0.000001 && attackCooldown <= 0.000001) {
+  const inRange = Math.hypot(previous.player.x - enemy.x, previous.player.z - enemy.z) <= ATTACK_RANGE + 0.000001;
+  if (inRange && hasLineOfSight(enemy, previous.player) && attackCooldown <= 0.000001) {
     playerHealth = Math.max(0, playerHealth - 1);
     attackCooldown = ATTACK_DELAY;
   }

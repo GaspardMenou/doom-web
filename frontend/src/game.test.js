@@ -4,6 +4,7 @@ import {advance, newGame} from './game.js';
 
 test('avancer pendant une seconde déplace le joueur de trois mètres', () => {
   let state = newGame();
+  state.player.x = 3.5;
   const start = state.player.z;
 
   for (let frame = 0; frame < 60; frame++) {
@@ -11,7 +12,7 @@ test('avancer pendant une seconde déplace le joueur de trois mètres', () => {
   }
 
   assert.ok(Math.abs(state.player.z - (start - 3)) < 0.000001);
-  assert.equal(state.player.x, 0);
+  assert.equal(state.player.x, 3.5);
 });
 
 test('reculer et se décaler utilisent les mêmes commandes simples', () => {
@@ -45,6 +46,7 @@ test('marcher en diagonale ne fait pas aller plus vite', () => {
 test('30 ou 60 images par seconde donnent le même déplacement', () => {
   function walk(frames) {
     let state = newGame();
+    state.player.x = 3.5;
     for (let frame = 0; frame < frames; frame++) {
       state = advance(state, {forward: true}, 1 / frames);
     }

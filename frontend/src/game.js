@@ -1,6 +1,6 @@
 import {advanceEnemy} from './enemy.js';
+import {atExit, moveInLevel} from './level.js';
 
-export const ROOM_SIZE = 10;
 export const PLAYER_RADIUS = 0.25;
 export const PLAYER_MAX_HEALTH = 3;
 const SPEED = 3;
@@ -23,20 +23,22 @@ export function advance(previous, input, seconds) {
   const forward = Number(Boolean(input.forward)) - Number(Boolean(input.backward));
   const side = Number(Boolean(input.right)) - Number(Boolean(input.left));
   const distance = SPEED * dt / Math.max(1, Math.hypot(forward, side));
-  const x = previous.player.x + (side * Math.cos(angle) - forward * Math.sin(angle)) * distance;
-  const z = previous.player.z - (forward * Math.cos(angle) + side * Math.sin(angle)) * distance;
-  // shortcut: pièce rectangulaire vide ; revoir les collisions avec les obstacles du niveau.
-  const limit = ROOM_SIZE / 2 - PLAYER_RADIUS;
+  const dx = (side * Math.cos(angle) - forward * Math.sin(angle)) * distance;
+  const dz = -(forward * Math.cos(angle) + side * Math.sin(angle)) * distance;
+  const position = moveInLevel(previous.player, dx, dz, PLAYER_RADIUS);
 
-  return advanceEnemy({
+  const state = advanceEnemy({
     ...previous,
     player: {
       ...previous.player,
       angle,
-      x: Math.max(-limit, Math.min(limit, x)),
-      z: Math.max(-limit, Math.min(limit, z)),
+      ...position,
     },
   }, dt);
+  if (state.status === 'playing' && state.playerHealth > 0 && atExit(state.player)) {
+    return {...state, status: 'won'};
+  }
+  return state;
 }
 
 export function shoot(previous, hit) {

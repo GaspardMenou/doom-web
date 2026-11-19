@@ -1,6 +1,6 @@
 # Doom Web
 
-Projet de FPS rétro inspiré du premier Doom : React pour l'interface, Three.js dans un Canvas pour le jeu, FastAPI + SQLAlchemy pour les scores. Les trois premiers sprints permettent de marcher dans une pièce 3D, tirer et affronter un ennemi qui poursuit et attaque le joueur.
+Projet de FPS rétro inspiré du premier Doom : React pour l'interface, Three.js dans un Canvas pour le jeu, FastAPI + SQLAlchemy pour les scores. Les quatre premiers sprints permettent d'explorer un petit niveau 3D, tirer, survivre à un ennemi et atteindre la sortie pour gagner.
 
 ## Première version convenue
 
@@ -18,15 +18,15 @@ Le backend sait lire un classement vide. **L'enregistrement n'est pas encore imp
 
 Dans `backend/` : `uv sync --locked`, `uv run pytest -q` (1 passed), puis `uv run uvicorn scores:create_app --factory --reload --port 8001`.
 
-Dans `frontend/` : `npm ci`, `npm test` (47 tests), puis `npm run dev`. Ouvrir `http://127.0.0.1:5175`. Chaque terminal reste dans son dossier.
+Dans `frontend/` : `npm ci`, `npm test` (71 tests), puis `npm run dev`. Ouvrir `http://127.0.0.1:5175`. Chaque terminal reste dans son dossier.
 
 ## Sprint 1 : comprendre dans l'ordre
 
 1. `frontend/src/game.test.js` : commencer par le premier test, « avancer pendant une seconde déplace le joueur de trois mètres ». Il vérifie une règle sans navigateur ni Three.js.
 2. `frontend/src/game.js` : `newGame()` place le joueur ; `advance()` calcule sa prochaine position. `x` représente gauche/droite, `z` avant/arrière. La vitesse est multipliée par le temps écoulé, pas par le nombre d'images.
-3. Les tests suivants ajoutent les directions, le regard, la diagonale et les murs. La pièce mesure 10 mètres ; le rayon du joueur vaut 0,25 mètre. Ses coordonnées restent donc entre -4,75 et +4,75. Cette collision simple ne gère pour l'instant qu'une pièce rectangulaire vide.
+3. Les tests suivants ajoutent les directions, le regard, la diagonale et les murs. La pièce mesure 10 mètres ; le rayon du joueur vaut 0,25 mètre. Ses coordonnées restent donc entre -4,75 et +4,75. Depuis le sprint 4, le premier test démarre dans le passage libre à `x = 3.5` pour mesurer la vitesse sans rencontrer la cloison ; les collisions sont dans `level.js`.
 4. `frontend/src/input.js` et `input.test.js` : les touches physiques WASD correspondent à ZQSD sur AZERTY ; les flèches fonctionnent aussi. Une perte de focus remet les touches à zéro.
-5. `frontend/src/room.js` : uniquement le sol quadrillé et les quatre murs colorés. `canvas.js` branche la caméra, `PointerLockControls`, les commandes et la boucle d'affichage. Les règles de déplacement restent dans `game.js`.
+5. `frontend/src/room.js` : le sol quadrillé et les murs colorés, puis la cloison et la sortie ajoutées au sprint 4. `canvas.js` branche la caméra, `PointerLockControls`, les commandes et la boucle d'affichage. Les règles de déplacement restent dans `game.js`.
 6. `frontend/src/main.jsx` : React monte le jeu dans le Canvas et affiche les boutons. Les positions ne passent pas par un état React à chaque image.
 
 Pour ne lancer que le premier test depuis `frontend/` :
@@ -74,7 +74,28 @@ node --test src/combat.test.js
 
 Les tests ont été observés en échec avant l'implémentation, puis les 47 tests et le build sont passés au vert. Le contrôle navigateur couvre la poursuite visible, la pause, les trois attaques jusqu'à la défaite, le blocage après défaite, le reset complet et l'arrêt des dégâts après la mort de l'ennemi. Seule la capture native de la souris est simulée pendant ce contrôle automatisé. L'utilisateur a également confirmé dans son navigateur que le combat, la défaite, le redémarrage et les deux tirs pour tuer l'ennemi fonctionnent.
 
-Pour ce sprint, la poursuite est directe et le contact n'est pas solide : le joueur peut traverser le cube. Des obstacles intérieurs demanderont d'adapter les collisions et le trajet de l'ennemi.
+Au sprint 3, la poursuite était directe. Le sprint 4 adapte le trajet aux obstacles intérieurs. Le contact reste non solide : le joueur peut traverser le cube.
+
+## Sprint 4 : explorer et atteindre la sortie
+
+Le niveau reste volontairement petit : une pièce de 10 m, divisée par une cloison avec un passage à droite. La sortie est le carré vert au sol, dans la partie gauche de la seconde zone. Le joueur et l'ennemi gardent leurs positions et leurs vies du sprint 3.
+
+1. **Le mur bloque, le passage laisse passer.** Lire le premier test de `frontend/src/level.test.js`, puis `canStand()` dans `level.js`. Les mêmes coordonnées servent à dessiner le mur et à tester les collisions. `moveInLevel()` essaie séparément les deux axes pour permettre de longer un mur.
+2. **Entrer vivant dans la sortie fait gagner.** Commencer par le premier test de `frontend/src/victory.test.js` : le joueur a 1 PV, l'ennemi est vivant, un petit pas le fait entrer dans le carré. `atExit()` vérifie la position ; à la fin de `advance()`, `game.js` passe à `status: 'won'` si le joueur a survécu. Un coup fatal pendant ce même pas donne la défaite.
+3. **L'ennemi contourne la cloison.** `path.test.js` puis `path.js` ajoutent une petite recherche en largeur : des cases voisines sont essayées jusqu'à trouver un chemin. `enemy.test.js` vérifie le détour dans les deux sens, les coins et les attaques bloquées par le mur. Ce morceau est plus avancé ; il peut se lire après les deux premières étapes.
+4. **La victoire termine la partie.** `canvas.js` affiche le résultat et libère la souris. Les déplacements, les tirs et la reprise restent bloqués jusqu'à Recommencer, qui rétablit le niveau, les vies et le regard.
+
+Pour commencer par une seule règle depuis `frontend/` :
+
+```sh
+node --test --test-name-pattern='entrer vivant' src/victory.test.js
+```
+
+Puis lancer `node --test src/level.test.js src/victory.test.js`, et enfin `npm test`.
+
+Les tests du niveau et de la victoire ont été observés en échec avant leur implémentation. Les tests de trajet ont aussi révélé un blocage au coin de la cloison, corrigé avant intégration. Vérification : 71 tests au vert et build validé ; le contrôle navigateur couvre le tir bloqué par la cloison, le trajet complet sans tuer l'ennemi, la victoire avec 3 PV, la libération de la souris, le blocage après victoire et le redémarrage. Seule la capture native de la souris est simulée pour ce contrôle automatisé.
+
+Limites de ce sprint : niveau fixe, trajet ennemi sur une grille d'un mètre, un seul ennemi et contact non solide. Pas encore de sauvegarde de résultat ; elle vient dans le sprint consacré au backend.
 
 ## Premier trajet complet
 

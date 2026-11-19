@@ -1,0 +1,80 @@
+{
+  "asset": "enemy-guard-sheet.png",
+  "created_at": "2026-11-19",
+  "mode": "built-in image generation with original guard reference",
+  "tool": "image_gen__imagegen",
+  "transparent_background": true,
+  "original_design": true,
+  "prompt": "Use case: stylized-concept.\nAsset type: production-ready animation sprite sheet derived from the supplied original guard sprite. Create ONE square transparent PNG, approximately 2048 x 2048, containing EXACTLY FOUR frames in an exact 2-column by 2-row grid of equal square cells. Use an even pixel width and height so each cell is exactly half the image width and half its height. The grid is an invisible layout only: do not draw dividing lines, frames, labels, or numbers.\nInput image role: the attached full-body guard is the identity, palette, pixel-art rendering, armor, horns, eyes, facial features, and body-proportion reference. Keep this SAME original guard in every frame: brown scarred skin, two short curved horns, red eyes, worn olive-brown shoulder/chest/leg armor, belt pouches, broad clawed hands and feet. Do not create a new character or redesign its outfit.\nFrame layout in reading order:\nTOP LEFT (frame 0): idle, front-facing, the reference's grounded threatening pose, feet apart, claws down beside the torso.\nTOP RIGHT (frame 1): front-facing WALK step A, the guard's LEFT leg clearly stepping forward toward the viewer, the RIGHT leg trailing, RIGHT arm swinging forward and LEFT arm back. Make the alternating arm and leg movement visibly different from idle.\nBOTTOM LEFT (frame 2): front-facing WALK step B, the guard's RIGHT leg clearly stepping forward toward the viewer, the LEFT leg trailing, LEFT arm swinging forward and RIGHT arm back. This must be the opposite gait phase from frame 1, with visibly different feet and arm positions.\nBOTTOM RIGHT (frame 3): front-facing ATTACK, both clawed hands raised and thrust toward the viewer at head/shoulder height in a striking pose, elbows bent, torso leaning slightly forward, aggressive expression. Distinctly different from both walk frames and idle.\nAlignment and framing: all four full bodies are completely inside their own equal cell, including horns, all fingers and toes. EXACTLY the same character scale, head size, shoulder width, and torso proportions in every cell. Character center line at 50 percent of EACH cell's width. A consistent shared foot ground baseline at 90 percent of EACH cell's height. Preserve transparent margins of about 10 percent around every sprite within its cell; never let one pose spill into another cell. The head/horns should start near 10 percent of each cell's height, with no zoom or camera-angle changes between frames. The foot that bears weight stays on the common baseline while the lifted walking foot can rise.\nStyle: faithfully match the supplied original's coarse hand-painted pixel clusters and limited roughly 64-color palette, credible original 1993 PC FPS monster sprite art. Sharp stepped pixel outlines and dithered shadows, not smooth 3D, photorealism, vector art, or a modern cartoon.\nBackground: genuine transparent alpha everywhere outside each guard, including all gaps between arms, torso, and legs. No room, scenery, floor, cast shadow, ground disk, background fill, grid, borders, words, logos, HUD, weapons, additional characters, blood, or gore.",
+  "source_file": "exec-1d7e4775-e32e-4597-86d0-f21cbe734d58.png",
+  "output": {
+    "width": 1254,
+    "height": 1254,
+    "columns": 2,
+    "rows": 2,
+    "cell_width": 627,
+    "cell_height": 627,
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "transparent_pixels": 821441,
+    "frame_bounds_alpha128": [
+      [
+        78,
+        18,
+        548,
+        591
+      ],
+      [
+        94,
+        22,
+        531,
+        600
+      ],
+      [
+        80,
+        21,
+        533,
+        597
+      ],
+      [
+        66,
+        32,
+        561,
+        593
+      ]
+    ],
+    "baseline_fractions": [
+      0.9426,
+      0.9569,
+      0.9522,
+      0.9458
+    ],
+    "format": "PNG",
+    "frames": [
+      "idle",
+      "walk-left",
+      "walk-right",
+      "attack"
+    ],
+    "postprocessing": "No visual edits or cropping; generated alpha preserved. Exact prompt embedded with the Impeccable CLI."
+  },
+  "reference_generation": {
+    "note": "Original generated reference used for this sheet; intermediate PNG omitted from shipped assets.",
+    "asset": "enemy-guard.png",
+    "created_at": "2026-11-19",
+    "mode": "built-in image generation",
+    "tool": "image_gen__imagegen",
+    "transparent_background": true,
+    "original_design": true,
+    "prompt": "Use case: stylized-concept.\nAsset type: one original enemy billboard sprite for a first-person shooter game, square 1024 x 1024 PNG with genuine alpha transparency.\nPrimary request: a full-body, front-facing hostile humanoid mutant guard in a threatening, readable standing pose. A heavy brow, short curved horns, scarred brown skin, muted glowing red eyes, worn olive-brown military armor, large clawed hands and large clawed feet. Knees slightly bent, arms held apart enough to read the hands, compact vertical silhouette suitable for a game hitbox.\nStyle/medium: original 1993 PC first-person-shooter enemy sprite aesthetic, Doom-era inspiration without copying any original game asset or recognizable character. Hand-painted low-resolution pixel art with coarse visible square pixel clusters, a deliberately limited palette, crisp stepped outlines, restrained dithered shadows and directional pixel highlights. Credible dark retro game sprite, not a smooth 3D model, realistic photograph, or modern polished illustration.\nComposition/framing: entire character visible from horns to every toe, centered, facing directly toward the viewer. Body occupies approximately 85 percent of the square image height and 60 percent of its width. Keep a small transparent margin around the head and claws. Feet align on one coherent ground line very close to the bottom of the image, fully visible, with only a narrow transparent margin beneath them. No cropped body parts.\nColor palette: dark brown scarred skin, dirty muted olive and brown armor, charcoal shadows, subdued red eyes. Strong readable silhouette.\nScene/backdrop: genuine transparency everywhere outside the character, including all gaps between arms, torso, and legs. No scenery, room, background color, floor, cast shadow, pedestal, border, HUD, text, lettering, numbers, logos, watermark, blood, or gore. Only the original mutant guard.",
+    "source_file": "exec-91ff110a-5494-4876-93ab-2af28336ad33.png",
+    "output": {
+      "width": 1254,
+      "height": 1254,
+      "format": "PNG",
+      "postprocessing": "No visual edits or cropping; generated alpha preserved. Exact prompt embedded with the Impeccable CLI."
+    }
+  }
+}

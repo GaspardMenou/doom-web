@@ -2,29 +2,41 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {newGame, shoot} from './game.js';
 
-test('un tir qui touche retire un point de vie à la cible', () => {
+test('un tir atteint seulement l’ennemi identifié et le met en alerte', () => {
   const state = newGame();
-  const next = shoot(state, true);
+  const victim = state.enemies[1];
+  const next = shoot(state, victim.id);
 
-  assert.equal(next.targetHealth, 1);
-  assert.equal(state.targetHealth, 2);
+  assert.equal(next.enemies[1].health, 1);
+  assert.equal(next.enemies[1].alerted, true);
+  assert.equal(state.enemies[1].health, 2);
+  assert.equal(state.enemies[1].alerted, false);
+  assert.equal(next.enemies[0], state.enemies[0]);
 });
 
-test('un tir manqué conserve les points de vie', () => {
+test('un tir manqué ou un identifiant inconnu conserve la partie', () => {
   const state = newGame();
-  assert.deepEqual(shoot(state, false), state);
+  assert.equal(shoot(state, null), state);
+  assert.equal(shoot(state, 'absent'), state);
 });
 
-test('deux impacts détruisent la cible et les tirs suivants ne rendent pas sa vie négative', () => {
-  let state = shoot(shoot(newGame(), true), true);
-  assert.equal(state.targetHealth, 0);
-
-  state = shoot(state, true);
-  assert.equal(state.targetHealth, 0);
+test('deux impacts tuent cet ennemi ; les morts ne prennent plus de coups', () => {
+  let state = newGame();
+  const id = state.enemies[0].id;
+  state = shoot(shoot(state, id), id);
+  assert.equal(state.enemies[0].health, 0);
+  assert.equal(state.enemies[0].mode, 'dead');
+  assert.equal(shoot(state, id), state);
+  assert.equal(state.enemies[1].health, 2);
 });
 
-test('une nouvelle partie rétablit les deux points de vie', () => {
-  const destroyed = shoot(shoot(newGame(), true), true);
-  assert.equal(destroyed.targetHealth, 0);
-  assert.equal(newGame().targetHealth, 2);
+test('recommencer rétablit les ennemis et une partie terminée bloque les tirs', () => {
+  const state = newGame();
+  const id = state.enemies[0].id;
+  const won = {...state, status: 'won'};
+  const lost = {...state, status: 'lost'};
+  assert.equal(shoot(won, id), won);
+  assert.equal(shoot(lost, id), lost);
+  assert.equal(newGame().enemies[0].health, 2);
+  assert.equal(newGame().enemies[0].alerted, false);
 });

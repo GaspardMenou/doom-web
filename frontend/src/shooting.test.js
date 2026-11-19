@@ -110,12 +110,21 @@ test('les déplacements de la caméra et de la cible sont pris en compte entre d
 
 test('dans le niveau réel, la cloison bloque le tir mais le passage le laisse passer', () => {
   const scene = createRoom();
-  const target = scene.getObjectByName('target');
+  const target = scene.children.find(object => object.userData.enemyId);
   const camera = new PerspectiveCamera(75, 1, 0.1, 100);
   camera.position.set(0, 1.6, 2);
+  target.position.set(0, 0.9, -4.5);
   assert.equal(hitsTarget(camera, scene.children, target), false);
 
-  camera.position.x = 3.5;
-  target.position.x = 3.5;
+  camera.position.x = -3.5;
+  target.position.x = -3.5;
+  assert.equal(hitsTarget(camera, scene.children, target), true);
+});
+
+test('le garde reste touchable à bout portant même au contact de son sprite', () => {
+  const scene = createRoom();
+  const target = scene.children.find(object => object.userData.enemyId);
+  const camera = new PerspectiveCamera(75, 1, 0.05, 100);
+  camera.position.set(target.position.x, 1.6, target.position.z);
   assert.equal(hitsTarget(camera, scene.children, target), true);
 });

@@ -8,6 +8,8 @@ import {ScoreForm} from './ScoreForm.jsx';
 import {Hud} from './Hud.jsx';
 import {LevelMap} from './LevelMap.jsx';
 import {toggleFullscreen} from './fullscreen.js';
+import {PlayerStats} from './PlayerStats.jsx';
+import {LEVELS} from './levels/index.js';
 import './style.css';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8001';
@@ -25,6 +27,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [fullscreen, setFullscreen] = useState(false);
   const [fullscreenError, setFullscreenError] = useState('');
+  const [showPlayerStats, setShowPlayerStats] = useState(false);
 
   useEffect(() => {
     try {
@@ -90,10 +93,19 @@ function App() {
     setHome(true);
   }
 
+  function goNext() {
+    flushSync(() => game.current.nextLevel());
+    game.current.resume();
+  }
+
   const playing = state.status === 'playing';
   const won = state.status === 'won';
   const lost = state.status === 'lost';
   const unavailable = state.status === 'unavailable';
+  const levelIndex = state.levelIndex ?? 0;
+  const level = LEVELS[levelIndex];
+  const hasNext = levelIndex < LEVELS.length - 1;
+  const campaignWon = won && !hasNext;
   return <main ref={shell} className={`app-shell ${home ? 'is-home' : 'is-game'}`}>
     <header className="topbar">
       <span className="brand">D<span aria-hidden="true">/</span>W <small>DOOM WEB</small></span>
@@ -112,9 +124,9 @@ function App() {
         <div className="mission-intro">
           <h1>Doom <span>Web</span></h1>
           <h2>Une seule issue. Restez en vie.</h2>
-          <p>Traversez le secteur, évitez l’ennemi et atteignez la sortie verte. Ou faites parler la poudre.</p>
+          <p>Explorez {LEVELS.length} secteurs différents. Les gardes vous repèrent à courte portée. À vous de rejoindre la dernière sortie.</p>
           <button className="primary play-button" autoFocus disabled={unavailable} onClick={start}>Jouer <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg></button>
-          <p className="mission-facts">3 PV au départ <span>·</span> Munitions illimitées <span>·</span> Solo</p>
+          <p className="mission-facts">{LEVELS.length} niveaux <span>·</span> 3 PV au départ <span>·</span> Munitions illimitées</p>
           {unavailable && <p role="alert" className="error">{state.error}</p>}
         </div>
         <LevelMap />
@@ -123,6 +135,10 @@ function App() {
         <div className="list-heading"><h2>Tableau des survivants <span>Top 10</span></h2><button className="utility" disabled={loading} onClick={() => loadScores()}>Recharger</button></div>
         {loading ? <p className="empty-score">Lecture du classement…</p> : scores.length === 0 ? <p className="empty-score">Aucun score pour le moment. Terminez une partie pour inscrire votre nom.</p> : <ol>{scores.map(score => <li key={score.id}><span>{score.player}</span><strong>{score.points}<small> PTS</small></strong></li>)}</ol>}
         {error && <p role="alert" className="error">{error}</p>}
+        <details className="players-disclosure" open={showPlayerStats} onToggle={event => setShowPlayerStats(event.currentTarget.open)}>
+          <summary>Statistiques par joueur</summary>
+          {showPlayerStats && <PlayerStats request={request} revision={scores} />}
+        </details>
       </section>
       <p className="score-disclaimer">Classement de démonstration. Scores déclarés par les joueurs.</p>
     </div>}
@@ -135,17 +151,18 @@ function App() {
           <img className="weapon-view" src="/art/pistol-view.png" alt="" />
         </>}
       </div>
-      <p className="game-message" role="status">{won ? 'Victoire : vous avez atteint la sortie !' : lost ? 'Défaite : vous n’avez plus de vie.' : playing ? (state.lastShot || 'Objectif : rejoignez la sortie verte.') : 'En pause : la partie vous attend.'}</p>
+      <p className="game-message" role="status">{campaignWon ? 'Victoire : tous les niveaux sont terminés !' : won ? 'Niveau terminé : la suite vous attend.' : lost ? 'Défaite : vous n’avez plus de vie.' : playing ? (state.lastShot || 'Objectif : rejoignez la sortie verte.') : 'En pause : la partie vous attend.'}</p>
       <Hud state={state} />
       {!playing && !home && <section className={`game-overlay${won ? ' has-won' : ''}`} aria-label={won || lost ? 'Fin de partie' : 'Menu de pause'}>
         <div className="menu-panel">
-          <h2>{won ? 'Victoire' : lost ? 'Défaite' : unavailable ? 'Signal perdu' : 'En pause'}</h2>
-          <p>{won ? 'Vous avez trouvé la sortie. Inscrivez votre nom.' : lost ? 'Le secteur a eu raison de vous. Retentez votre chance.' : 'Soufflez un instant. Le secteur peut attendre.'}</p>
+          <h2>{campaignWon ? 'Victoire' : won ? 'Niveau terminé' : lost ? 'Défaite' : unavailable ? 'Signal perdu' : 'En pause'}</h2>
+          <p>{campaignWon ? 'Vous avez traversé les trois niveaux. Inscrivez votre nom.' : won ? `${level.name} est derrière vous. Vos PV sont conservés pour la suite.` : lost ? 'Le secteur a eu raison de vous. Retentez votre chance.' : 'Soufflez un instant. Le secteur peut attendre.'}</p>
           {state.error && <p role="alert" className="error">{state.error}</p>}
-          {(won || lost) && <ScoreForm points={scorePoints(state)} request={request} onSaved={loadScores} />}
+          {(campaignWon || lost) && <ScoreForm points={scorePoints(state)} request={request} onSaved={loadScores} />}
           <div className="menu-actions">
             {!won && !lost && !unavailable && <button className="primary" autoFocus onClick={() => game.current.resume()}>Reprendre</button>}
-            {!unavailable && <button className={won || lost ? 'primary' : 'secondary'} autoFocus={won || lost} onClick={start}>{won || lost ? 'Rejouer' : 'Recommencer'}</button>}
+            {won && hasNext && <button className="primary" autoFocus onClick={goNext}>Niveau suivant</button>}
+            {!unavailable && <button className={campaignWon || lost ? 'primary' : 'secondary'} autoFocus={campaignWon || lost} onClick={start}>{won || lost ? 'Rejouer' : 'Recommencer'}</button>}
             <button className="secondary" onClick={goHome}>Retour à l’accueil</button>
           </div>
         </div>

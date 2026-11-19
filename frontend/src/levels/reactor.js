@@ -1,0 +1,26 @@
+export default {
+  id: 'reactor',
+  name: 'Réacteur',
+  size: 16,
+  spawn: {x: 0, z: 6.5, angle: 0},
+  enemies: [
+    {id: 'reactor-1', x: -6, z: 5.5},
+    {id: 'reactor-2', x: 6, z: 4.5},
+    {id: 'reactor-3', x: -3, z: -2.5},
+    {id: 'reactor-4', x: 3, z: -2.5},
+    {id: 'reactor-5', x: 0, z: -6.5},
+  ],
+  walls: [
+    {x: 0, z: 0, width: 2, depth: 2},
+    {x: -4, z: -4, width: 1, depth: 1},
+    {x: 4, z: -4, width: 1, depth: 1},
+    {x: -4, z: 4, width: 1, depth: 1},
+    {x: 4, z: 4, width: 1, depth: 1},
+    {x: 0, z: -5, width: 3, depth: 1},
+    {x: 0, z: 5, width: 3, depth: 1},
+    {x: -5.5, z: 0, width: 1, depth: 2},
+    {x: 5.5, z: 0, width: 1, depth: 2},
+  ],
+  exit: {x: 6.5, z: -6.5, width: 1.5, depth: 1.5},
+  wallTexture: '/art/walls/reactor.webp',
+};

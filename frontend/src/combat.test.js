@@ -1,75 +1,78 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {advance, newGame, shoot} from './game.js';
+import {LEVELS} from './levels/index.js';
 
-test('la partie démarre avec trois points de vie et un ennemi en face', () => {
+function duel() {
   const state = newGame();
+  state.enemies = [{...state.enemies[0], x: 0, z: 3, alerted: true}];
+  return state;
+}
 
+test('la partie démarre avec trois PV et les gardes indépendants du niveau', () => {
+  const state = newGame();
   assert.equal(state.playerHealth, 3);
-  assert.equal(state.targetHealth, 2);
-  assert.deepEqual(state.enemy, {x: 0, z: -2});
-  assert.equal(state.attackCooldown, 0);
+  assert.equal(state.enemies.length, 3);
   assert.equal(state.status, 'playing');
+  for (const [index, enemy] of state.enemies.entries()) {
+    assert.deepEqual(enemy, {...LEVELS[0].enemies[index], health: 2, attackCooldown: 0, alerted: false, mode: 'idle'});
+  }
+  assert.equal('enemy' in state, false);
+  assert.equal('targetHealth' in state, false);
+  assert.equal('attackCooldown' in state, false);
 });
 
-test('la boucle de jeu fait avancer l’ennemi sans modifier l’état précédent', () => {
-  const state = newGame();
-  state.player.x = 3.5;
-  state.enemy.x = 3.5;
+test('la boucle fait avancer les gardes alertés sans modifier l’état précédent', () => {
+  const state = duel();
+  state.enemies[0].z = 5;
   const next = advance(state, {}, 0.05);
-
-  assert.ok(Math.abs(next.enemy.z - (-1.95)) < 0.000001);
-  assert.equal(state.enemy.z, -2);
+  assert.ok(Math.abs(next.enemies[0].z - 4.95) < 0.000001);
+  assert.equal(state.enemies[0].z, 5);
 });
 
-test('un ennemi à portée enlève un point de vie au joueur', () => {
-  const state = newGame();
-  state.enemy.z = state.player.z - 1;
-  const next = advance(state, {}, 0.05);
-
+test('un garde à portée enlève un PV et déclenche son propre délai', () => {
+  const next = advance(duel(), {}, 0.05);
   assert.equal(next.playerHealth, 2);
-  assert.equal(next.attackCooldown, 1);
+  assert.equal(next.enemies[0].attackCooldown, 1);
   assert.equal(next.status, 'playing');
 });
 
 test('le dernier coup fait perdre la partie', () => {
-  const state = newGame();
+  const state = duel();
   state.playerHealth = 1;
-  state.enemy.z = state.player.z - 1;
   const next = advance(state, {}, 0.05);
-
   assert.equal(next.playerHealth, 0);
   assert.equal(next.status, 'lost');
 });
 
 test('après la défaite, déplacements et tirs ne changent plus la partie', () => {
-  const state = {...newGame(), playerHealth: 0, status: 'lost'};
-
-  assert.deepEqual(advance(state, {right: true}, 0.05), state);
-  assert.deepEqual(shoot(state, true), state);
+  const state = {...duel(), playerHealth: 0, status: 'lost'};
+  assert.equal(advance(state, {right: true}, 0.05), state);
+  assert.equal(shoot(state, state.enemies[0].id), state);
 });
 
-test('un ennemi détruit ne poursuit ni n’attaque, le joueur peut encore marcher', () => {
+test('un garde tué reste mort, les autres poursuivent et le joueur peut marcher', () => {
   let state = newGame();
-  state.enemy.z = state.player.z - 1;
-  state = shoot(shoot(state, true), true);
+  state.enemies = [{...state.enemies[0], x: 0, z: 3}, {...state.enemies[1], x: 0, z: 5}];
+  const id = state.enemies[0].id;
+  state = shoot(shoot(state, id), id);
   const next = advance(state, {right: true}, 0.05);
-
-  assert.deepEqual(next.enemy, state.enemy);
+  assert.equal(next.enemies[0], state.enemies[0]);
+  assert.ok(next.enemies[1].z < 5);
   assert.equal(next.playerHealth, 3);
   assert.ok(next.player.x > state.player.x);
 });
 
-test('recommencer rétablit la vie, les positions et le combat', () => {
-  const lost = {...newGame(), playerHealth: 0, attackCooldown: 1, status: 'lost'};
+test('recommencer restaure les PV, les positions et tous les gardes', () => {
+  const lost = duel();
+  lost.playerHealth = 0;
+  lost.enemies[0].health = 0;
+  lost.enemies[0].attackCooldown = 1;
   lost.player.x = 4;
-  lost.enemy.z = 2;
   const fresh = newGame();
-
   assert.equal(fresh.playerHealth, 3);
-  assert.equal(fresh.targetHealth, 2);
   assert.equal(fresh.status, 'playing');
-  assert.equal(fresh.attackCooldown, 0);
-  assert.deepEqual(fresh.player, {x: 0, z: 2, angle: 0});
-  assert.deepEqual(fresh.enemy, {x: 0, z: -2});
+  assert.deepEqual(fresh.player, LEVELS[0].spawn);
+  assert.ok(fresh.enemies.every(enemy => enemy.health === 2 && enemy.attackCooldown === 0 && !enemy.alerted));
+  assert.equal(fresh.enemies.length, LEVELS[0].enemies.length);
 });

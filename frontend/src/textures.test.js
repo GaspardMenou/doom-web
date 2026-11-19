@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {NearestFilter, RepeatWrapping} from 'three';
-import {EXIT} from './level.js';
+import {DoubleSide, NearestFilter, RepeatWrapping} from 'three';
+import {LEVELS} from './levels/index.js';
 import {createRoom} from './room.js';
 import {createTexture} from './textures.js';
 
@@ -23,22 +23,42 @@ test('les textures industrielles sont pixelisées, opaques et reproductibles san
   }
 });
 
-test('le décor reste plat et conserve la géométrie de l’ennemi et de la sortie', () => {
-  const scene = createRoom();
-  assert.ok(scene.children.every(object => object.isMesh && object.children.length === 0));
-  const target = scene.getObjectByName('target');
-  assert.deepEqual(target.position.toArray(), [0, 1.6, -2]);
-  assert.equal(target.geometry.parameters.width, 1);
-  assert.equal(target.geometry.parameters.height, 1);
-  assert.equal(target.geometry.parameters.depth, 1);
-  const exit = scene.getObjectByName('exit');
-  assert.deepEqual(exit.position.toArray(), [EXIT.x, 0.02, EXIT.z]);
-  assert.equal(exit.geometry.parameters.width, EXIT.width);
-  assert.equal(exit.geometry.parameters.height, EXIT.depth);
-  for (const object of scene.children) {
-    assert.ok(object.material.map?.isDataTexture);
-    object.geometry.dispose();
-    object.material.map.dispose();
-    object.material.dispose();
+test('les trois décors gardent leurs murs, leur sortie et leurs gardes au sol', () => {
+  for (const level of LEVELS) {
+    const scene = createRoom(level);
+    assert.ok(scene.children.every(object => object.isMesh && object.children.length === 0));
+    assert.equal(scene.children.length, 7 + level.walls.length + level.enemies.length * 2);
+    for (const enemy of level.enemies) {
+    const target = scene.getObjectByName(`target:${enemy.id}`);
+    assert.deepEqual(target.position.toArray(), [enemy.x, 0.9, enemy.z]);
+    assert.equal(target.geometry.parameters.width, 1);
+    assert.equal(target.geometry.parameters.height, 1.8);
+    assert.equal(target.geometry.parameters.depth, 1);
+    assert.equal(target.visible, true);
+    assert.equal(target.material.opacity, 0);
+    assert.equal(target.material.transparent, true);
+    assert.equal(target.material.depthWrite, false);
+    const model = scene.getObjectByName(`enemy-model:${enemy.id}`);
+    assert.deepEqual(model.position.toArray(), [enemy.x, 0.82, enemy.z]);
+    assert.equal(model.geometry.parameters.width, 1);
+    assert.equal(model.geometry.parameters.height, 1.8);
+    assert.equal(model.material.alphaTest, 0.5);
+    assert.equal(model.material.side, DoubleSide);
+    assert.equal(model.material.depthWrite, false);
+    }
+    const exit = scene.getObjectByName('exit');
+    assert.deepEqual(exit.position.toArray(), [level.exit.x, 0.02, level.exit.z]);
+    assert.equal(exit.geometry.parameters.width, level.exit.width);
+    assert.equal(exit.geometry.parameters.height, level.exit.depth);
+    for (const wall of level.walls) {
+      assert.ok(scene.children.some(object => object.geometry.parameters.width === wall.width &&
+        object.geometry.parameters.depth === wall.depth && object.position.x === wall.x && object.position.z === wall.z));
+    }
+    for (const object of scene.children) {
+      if (!object.userData.enemyId) assert.ok(object.material.map?.isDataTexture);
+      object.geometry.dispose();
+      object.material.map?.dispose();
+      object.material.dispose();
+    }
   }
 });

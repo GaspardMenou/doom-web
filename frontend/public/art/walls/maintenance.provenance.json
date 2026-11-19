@@ -1,0 +1,15 @@
+{
+  "asset": "maintenance.webp",
+  "mode": "built-in",
+  "intent": "generate",
+  "tool": "image_gen__imagegen",
+  "generated_at": "2026-11-19 16:15:49 UTC",
+  "prompt": "Use case: stylized-concept\nAsset type: seamless square 1024 by 1024 wall texture tile for an original early-1990s first-person shooter game, used directly as the diffuse map of a flat wall mesh.\nCreate the texture itself filling the entire image edge to edge. Flat straight-on orthographic 2D elevation, uniform material view, zero perspective. It must repeat seamlessly in BOTH horizontal and vertical axes: continue matching panel shapes, colors and wear across opposite image edges, no outer frame or border.\nStyle: deliberate 1993 PC game pixel art, chunky crisp pixel clusters, restrained dithering, visibly rough low-resolution materials, limited earthy palette. Small industrial panel seams and bolts, medium-value readable surfaces rather than near-black areas. Completely even diffuse lighting with no directional illumination, no shadows cast into space, no gradients imitating a room, no vignette, no wide black gaps.\nSubject: rusty bronze industrial maintenance wall. Warm oxidized brown and copper steel panels with a few compact recessed grid vents and short flush-mounted conduit channels integrated into the surface. Dense useful material detail, scratches, rivets and localized rust without noisy speckle. Conduit and vent patterns must continue cleanly at the repeating edges and remain shallow panel relief rather than objects protruding toward a camera. Distinct horizontal/vertical panel rhythm. Palette: medium rusty bronze, burnt umber, worn copper, muted brown-grey, small lighter rubbed metal edges. No yellow hazard stripe, no olive paint, no red glowing elements.\nConstraints: opaque surface texture only. No room, corridor, environment render, vanishing point, angled surface, 3D perspective, floor, ceiling, depth scene, characters, weapons, text, letters, symbols, numbers, signage, logos, watermark, border, modern neon, cyberpunk glow or glossy photoreal materials. Do not present multiple material swatches or an asset sheet. One repeatable tile.",
+  "source": "exec-d6782436-19be-4745-b347-5300b0ee9ed8.png",
+  "dimensions": {
+    "width": 1024,
+    "height": 1024
+  },
+  "post_processing": "Native square PNG converted to 1024×1024 WebP using cwebp -q 85 -m 6 -resize 1024 1024; no crop or painting. Exact prompt recorded with Impeccable embed-prompt using its WebP sidecar fallback.",
+  "bytes": 125402
+}

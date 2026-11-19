@@ -1,14 +1,28 @@
 import * as THREE from 'three';
 import {PointerLockControls} from 'three/addons/controls/PointerLockControls.js';
-import {advance, newGame, shoot} from './game.js';
+import {advance, newGame, nextLevel as beginNextLevel, shoot} from './game.js';
+import {LEVELS} from './levels/index.js';
 import {bindKeyboard} from './input.js';
 import {createRoom} from './room.js';
 import {castShot} from './shooting.js';
+import {enemyFrame} from './enemyAnimation.js';
 
 export function mountGame(canvas, onState = () => {}) {
   const renderer = new THREE.WebGLRenderer({canvas});
-  const scene = createRoom();
-  const target = scene.getObjectByName('target');
+  const loader = new THREE.TextureLoader();
+  let state = newGame();
+  function makeRoom() {
+    return createRoom(LEVELS[state.levelIndex], (url, loaded) => loader.load(url, loaded, undefined, () => {}));
+  }
+  let scene = makeRoom();
+  function findEnemyViews() {
+    return new Map(state.enemies.map(enemy => [enemy.id, {
+      target: scene.getObjectByName(`target:${enemy.id}`),
+      model: scene.getObjectByName(`enemy-model:${enemy.id}`),
+      hitUntil: 0,
+    }]));
+  }
+  let enemyViews = findEnemyViews();
   const tracer = new THREE.Line(
     new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]),
     new THREE.LineBasicMaterial({color: '#ffe17a', transparent: true}),
@@ -19,8 +33,8 @@ export function mountGame(canvas, onState = () => {}) {
   camera.rotation.order = 'YXZ';
   const controls = new PointerLockControls(camera, canvas);
   const keyboard = bindKeyboard(canvas);
-  let state = newGame();
   let previous = null;
+  let animationTime = 0;
   let shotUntil = 0;
   camera.position.set(state.player.x, 1.6, state.player.z);
 
@@ -39,8 +53,9 @@ export function mountGame(canvas, onState = () => {}) {
   function publish(status, feedback = {}) {
     onState({
       ...feedback,
-      targetHealth: state.targetHealth,
+      enemies: state.enemies,
       playerHealth: state.playerHealth,
+      levelIndex: state.levelIndex,
       status: state.status === 'playing' ? status : state.status,
     });
   }
@@ -91,12 +106,15 @@ export function mountGame(canvas, onState = () => {}) {
   function fire() {
     if (!controls.isLocked || state.status !== 'playing') return;
     const impact = castShot(camera, scene.children);
-    const hit = impact?.object === target;
+    const enemyId = impact?.object.userData.enemyId ?? null;
     showShot(impact);
-    state = shoot(state, hit);
-    target.visible = state.targetHealth > 0;
-    target.material.color.set(state.targetHealth === 1 ? '#d48228' : '#b22f4a');
-    publish('playing', {lastShot: hit ? 'Touché !' : 'Tir manqué.'});
+    state = shoot(state, enemyId);
+    if (enemyId) {
+      const view = enemyViews.get(enemyId);
+      view.hitUntil = animationTime + 120;
+      view.target.visible = view.model.visible = state.enemies.find(enemy => enemy.id === enemyId).health > 0;
+    }
+    publish('playing', {lastShot: enemyId ? 'Touché !' : 'Tir manqué.'});
   }
   function click(event) {
     if (event.button !== 0) return;
@@ -122,11 +140,11 @@ export function mountGame(canvas, onState = () => {}) {
     const seconds = previous === null ? 0 : (now - previous) / 1000;
     previous = now;
     if (controls.isLocked) {
+      animationTime += Math.min(seconds, 0.05) * 1000;
       const healthBefore = state.playerHealth;
       const statusBefore = state.status;
       state = advance(state, {...keyboard.read(), angle: camera.rotation.y}, seconds);
       camera.position.set(state.player.x, 1.6, state.player.z);
-      target.position.set(state.enemy.x, 1.6, state.enemy.z);
       if (state.playerHealth !== healthBefore || state.status !== statusBefore) {
         publish('playing');
         if (state.status !== 'playing') pause();
@@ -136,21 +154,57 @@ export function mountGame(canvas, onState = () => {}) {
       tracer.material.opacity = Math.max(0, (shotUntil - now) / 100);
       tracer.visible = tracer.material.opacity > 0;
     }
+    for (const enemy of state.enemies) {
+      const view = enemyViews.get(enemy.id);
+      const alive = enemy.health > 0;
+      view.target.visible = view.model.visible = alive;
+      view.target.position.set(enemy.x, 0.9, enemy.z);
+      const bob = enemy.mode === 'walk' ? Math.sin(animationTime / 90) * 0.015 : 0;
+      view.model.position.set(enemy.x, 0.82 + bob, enemy.z);
+      view.model.lookAt(camera.position.x, view.model.position.y, camera.position.z);
+      view.model.material.color.set(animationTime < view.hitUntil ? '#ff937c' : '#ffffff');
+      const map = view.model.material.map;
+      if (map.userData.animationSheet) {
+        const frame = enemyFrame(enemy, animationTime / 1000);
+        map.offset.set(frame % 2 / 2, 0.5 - Math.floor(frame / 2) / 2);
+      }
+    }
     renderer.render(scene, camera);
   });
+
+  function releaseRoom() {
+    scene.userData.disposed = true;
+    scene.remove(tracer);
+    for (const object of scene.children) {
+      object.geometry.dispose();
+      object.material.map?.dispose();
+      object.material.dispose();
+    }
+    scene.clear();
+  }
+
+  function openLevel(next) {
+    pause();
+    releaseRoom();
+    state = next;
+    animationTime = 0;
+    scene = makeRoom();
+    enemyViews = findEnemyViews();
+    scene.add(tracer);
+    camera.position.set(state.player.x, 1.6, state.player.z);
+    camera.rotation.set(0, state.player.angle, 0);
+    publish('paused');
+  }
 
   return {
     pause,
     resume,
     restart() {
-      pause();
-      state = newGame();
-      camera.position.set(state.player.x, 1.6, state.player.z);
-      camera.rotation.set(0, 0, 0);
-      target.visible = true;
-      target.position.set(state.enemy.x, 1.6, state.enemy.z);
-      target.material.color.set('#b22f4a');
-      publish('paused');
+      openLevel(newGame());
+    },
+    nextLevel() {
+      const next = beginNextLevel(state);
+      if (next !== state) openLevel(next);
     },
     destroy() {
       resizeObserver.disconnect();
@@ -165,11 +219,9 @@ export function mountGame(canvas, onState = () => {}) {
       window.removeEventListener('blur', pause);
       document.removeEventListener('visibilitychange', visibility);
       document.removeEventListener('pointerlockerror', pointerError);
-      for (const object of scene.children) {
-        object.geometry.dispose();
-        object.material.map?.dispose();
-        object.material.dispose();
-      }
+      releaseRoom();
+      tracer.geometry.dispose();
+      tracer.material.dispose();
       renderer.dispose();
     },
   };

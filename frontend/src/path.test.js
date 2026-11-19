@@ -12,7 +12,7 @@ test('un trajet libre vise directement le joueur', () => {
 
 test('le détour vers le nord commence à droite de la cloison', () => {
   const from = {x: 0, z: 2};
-  const to = {x: 0, z: -2};
+  const to = {x: 0, z: -4.5};
   const next = nextWaypoint(from, to);
 
   assert.ok(next.x > from.x);
@@ -21,7 +21,7 @@ test('le détour vers le nord commence à droite de la cloison', () => {
 });
 
 test('le détour fonctionne aussi en venant de l’autre côté de la cloison', () => {
-  const from = {x: 0, z: -2};
+  const from = {x: 0, z: -4.5};
   const to = {x: 0, z: 2};
   const next = nextWaypoint(from, to);
 
@@ -43,8 +43,8 @@ test('une destination dans la cloison ne fait pas inventer un passage', () => {
 });
 
 test('près du coin, le prochain point laisse assez de place pour tout le corps', () => {
-  const from = {x: 2.49, z: -1.14};
-  const next = nextWaypoint(from, {x: 0, z: 2});
+  const from = {x: 2.49, z: 0.01};
+  const next = nextWaypoint(from, {x: 0, z: -4.5});
 
   assert.ok(hasLineOfSight(from, next, 0.5));
   assert.ok(canStand(next.x, next.z, 0.5));

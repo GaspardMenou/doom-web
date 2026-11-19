@@ -1,13 +1,16 @@
 # Doom Web
 
-Projet de FPS rétro inspiré du premier Doom : React pour l'interface, Three.js dans un Canvas pour le jeu, FastAPI + SQLAlchemy pour les scores. Les six premiers sprints permettent d'explorer un petit niveau 3D, tirer, survivre à un ennemi, atteindre la sortie et enregistrer son résultat, avec un accueil, des menus et un habillage FPS rétro en plein écran.
+Projet de FPS rétro inspiré du premier Doom : React pour l'interface, Three.js dans un Canvas pour le jeu, FastAPI + SQLAlchemy pour les scores. Le sprint 7 propose une campagne de trois plans distincts, avec plusieurs gardes qui détectent le joueur, le poursuivent et s'animent. Les PV sont conservés entre les niveaux ; le résultat peut être enregistré après la dernière sortie ou une défaite.
+
+Le développement de l'API reste à la charge de l'utilisateur. Le front utilise les routes de score et attend aussi `GET /players/` pour les statistiques par pseudo ; le contrat est décrit dans `frontend/API_CONTRACT.md`.
 
 ## Première version convenue
 
-- Solo sur ordinateur, petit niveau à explorer : survivre et atteindre la sortie.
-- Une arme, munitions illimitées, un type d'ennemi et une barre de vie.
-- Accueil, commandes, pause, victoire/défaite, nouvelle partie et classement.
-- Développement en TDD et petits sprints : déplacement, tir, combat, niveau, parcours complet, enregistrement des résultats. Pour chaque comportement : test en échec, code minimal, tests au vert, nettoyage et vérification dans le navigateur.
+- Solo sur ordinateur : traverser trois secteurs de 12, 14 puis 16 mètres et atteindre leurs sorties.
+- Une arme, munitions illimitées, 3 PV pour la campagne et trois, quatre puis cinq gardes de 2 PV.
+- Accueil, commandes, pause, passage au niveau suivant, victoire/défaite, nouvelle campagne et classement.
+- Statistiques par pseudo affichées à partir de la réponse réelle de l'API ; aucune donnée de démonstration injectée dans l'application.
+- Développement en TDD et petits sprints. Pour chaque comportement : test en échec, code minimal, tests au vert, nettoyage et vérification dans le navigateur.
 - Rendu prévu le 20 novembre 2026 après-midi.
 
 ## Socle fourni
@@ -18,13 +21,15 @@ Le backend fourni savait lire un classement vide. Le sprint 5 ajoute l'enregistr
 
 Dans `backend/` : `uv sync --locked`, `uv run pytest -q` (21 tests), puis `uv run uvicorn scores:create_app --factory --reload --port 8001`.
 
-Dans `frontend/` : `npm ci`, `npm test` (82 tests), puis `npm run dev`. Ouvrir `http://127.0.0.1:5175`. Chaque terminal reste dans son dossier.
+Dans `frontend/` : `npm ci`, `npm test` (108 tests front au dernier contrôle local), puis `npm run dev`. Ouvrir `http://127.0.0.1:5175`. Chaque terminal reste dans son dossier.
 
-## Sprint 1 : comprendre dans l'ordre
+Les sections des sprints 1 à 6 ci-dessous conservent l'historique pédagogique et les validations de chaque étape. La pièce de 10 m, le cube unique, `targetHealth` et `shoot(state, true)` appartiennent à ces anciennes versions. Les tests ont depuis été adaptés ; pour comprendre le fonctionnement actuel, commencer par le sprint 7.
+
+## Sprint 1 : comprendre dans l'ordre (historique)
 
 1. `frontend/src/game.test.js` : commencer par le premier test, « avancer pendant une seconde déplace le joueur de trois mètres ». Il vérifie une règle sans navigateur ni Three.js.
 2. `frontend/src/game.js` : `newGame()` place le joueur ; `advance()` calcule sa prochaine position. `x` représente gauche/droite, `z` avant/arrière. La vitesse est multipliée par le temps écoulé, pas par le nombre d'images.
-3. Les tests suivants ajoutent les directions, le regard, la diagonale et les murs. La pièce mesure 10 mètres ; le rayon du joueur vaut 0,25 mètre. Ses coordonnées restent donc entre -4,75 et +4,75. Depuis le sprint 4, le premier test démarre dans le passage libre à `x = 3.5` pour mesurer la vitesse sans rencontrer la cloison ; les collisions sont dans `level.js`.
+3. Les tests suivants ajoutaient les directions, le regard, la diagonale et les murs. Au sprint 1, la pièce mesurait 10 mètres ; avec un rayon de 0,25 mètre, le joueur restait entre -4,75 et +4,75. Les dimensions viennent maintenant du niveau courant ; les collisions sont dans `level.js`.
 4. `frontend/src/input.js` et `input.test.js` : les touches physiques WASD correspondent à ZQSD sur AZERTY ; les flèches fonctionnent aussi. Une perte de focus remet les touches à zéro.
 5. `frontend/src/room.js` : le sol quadrillé et les murs colorés, puis la cloison et la sortie ajoutées au sprint 4. `canvas.js` branche la caméra, `PointerLockControls`, les commandes et la boucle d'affichage. Les règles de déplacement restent dans `game.js`.
 6. `frontend/src/main.jsx` : React monte le jeu dans le Canvas et affiche les boutons. Les positions ne passent pas par un état React à chaque image.
@@ -39,13 +44,13 @@ Les tests ont été écrits en échec avant les règles correspondantes. Ils rem
 
 Vérification du sprint : les 17 tests et le build passent, la pièce WebGL s'affiche. L'utilisateur a confirmé dans son navigateur que la souris contrôle le regard et que ZQSD permet de marcher. Cette validation est manuelle ; les tests automatisés couvrent les règles de déplacement, les collisions et les entrées clavier.
 
-## Sprint 2 : tirer sur une cible
+## Sprint 2 : tirer sur une cible (historique)
 
 - Entrer dans la pièce, viser le cube rouge au centre de l'écran, puis tirer au clic gauche ou avec Espace. Un appui donne un tir, sans limite de munitions. Le clic d'entrée capture seulement la souris.
 - La cible commence avec 2 points de vie : elle devient orange après un impact, puis disparaît au second. Un tir manqué ne lui enlève pas de vie ; les murs arrêtent les tirs.
 - Échap et Pause bloquent les tirs. Recommencer restaure la position, le regard et la cible rouge à 2 points de vie. La cible d'entraînement reste traversable.
 
-Pour comprendre, commencer par `frontend/src/shoot.test.js` : `shoot(newGame(), true)` doit laisser un seul point de vie, sans modifier l'état précédent. La fonction `shoot()` de `game.js` ne fait que mettre à jour cette vie.
+Au sprint 2, le premier test de `frontend/src/shoot.test.js` appelait `shoot(newGame(), true)` pour enlever un point de vie sans modifier l'état précédent. Depuis le sprint 7, `shoot(state, enemyId)` reçoit l'identifiant du garde touché, car plusieurs gardes sont présents.
 
 `frontend/src/shooting.test.js` teste ensuite la visée avec de vraies géométries Three.js, sans navigateur. `hitsTarget()` dans `shooting.js` lance un rayon depuis le centre de la caméra et prend uniquement le premier impact visible : un mur situé avant la cible bloque le tir. `canvas.js` relie ce résultat aux clics, aux dégâts et à l'affichage.
 
@@ -55,9 +60,9 @@ node --test src/shoot.test.js
 
 Les tests de dégâts et de visée ont été lancés en échec avant leur implémentation. Vérification du sprint : 30 tests au vert et build validé ; contrôle navigateur du clic d'entrée, des dégâts, de la destruction, du reset, des tirs manqués et de la pause. Pour ce contrôle automatisé, seule la capture native de la souris est simulée ; la scène Three.js, les tirs et les règles de jeu sont réels. Les commandes souris/clavier natives avaient été confirmées par l'utilisateur au sprint 1.
 
-## Sprint 3 : poursuite, attaques et défaite
+## Sprint 3 : poursuite, attaques et défaite (historique)
 
-Le cube rouge du sprint 2 devient l'ennemi. On garde ses 2 PV et les fonctions de tir déjà testées ; `targetHealth` désigne toujours sa vie. Le joueur commence avec 3 PV, affichés avec une barre de vie.
+Le cube rouge du sprint 2 devient l'ennemi. Dans cet état historique, il garde 2 PV et `targetHealth` désigne sa vie. Depuis le sprint 7, chaque garde possède sa propre propriété `health` dans `state.enemies`. Le joueur commence avec 3 PV, affichés avec une barre de vie.
 
 - L'ennemi poursuit le joueur à 1 mètre par seconde et s'arrête à 1 mètre de lui.
 - À portée, il retire 1 PV, puis attend une seconde avant la prochaine attaque. S'éloigner permet d'éviter ses coups ; Pause fige aussi le combat.
@@ -76,9 +81,9 @@ Les tests ont été observés en échec avant l'implémentation, puis les 47 tes
 
 Au sprint 3, la poursuite était directe. Le sprint 4 adapte le trajet aux obstacles intérieurs. Le contact reste non solide : le joueur peut traverser le cube.
 
-## Sprint 4 : explorer et atteindre la sortie
+## Sprint 4 : explorer et atteindre la sortie (historique)
 
-Le niveau reste volontairement petit : une pièce de 10 m, divisée par une cloison avec un passage à droite. La sortie est le carré vert au sol, dans la partie gauche de la seconde zone. Le joueur et l'ennemi gardent leurs positions et leurs vies du sprint 3.
+Au sprint 4, le niveau était une pièce de 10 m, divisée par une cloison avec un passage à droite. La sortie était le carré vert au sol, dans la partie gauche de la seconde zone. Le joueur et l'ennemi gardaient leurs positions et leurs vies du sprint 3. Ce plan a été remplacé au sprint 7.
 
 1. **Le mur bloque, le passage laisse passer.** Lire le premier test de `frontend/src/level.test.js`, puis `canStand()` dans `level.js`. Les mêmes coordonnées servent à dessiner le mur et à tester les collisions. `moveInLevel()` essaie séparément les deux axes pour permettre de longer un mur.
 2. **Entrer vivant dans la sortie fait gagner.** Commencer par le premier test de `frontend/src/victory.test.js` : le joueur a 1 PV, l'ennemi est vivant, un petit pas le fait entrer dans le carré. `atExit()` vérifie la position ; à la fin de `advance()`, `game.js` passe à `status: 'won'` si le joueur a survécu. Un coup fatal pendant ce même pas donne la défaite.
@@ -97,7 +102,7 @@ Les tests du niveau et de la victoire ont été observés en échec avant leur i
 
 Limites de ce sprint : niveau fixe, trajet ennemi sur une grille d'un mètre, un seul ennemi et contact non solide. Pas encore de sauvegarde de résultat ; elle vient dans le sprint consacré au backend.
 
-## Sprint 5 : enregistrer son résultat
+## Sprint 5 : enregistrer son résultat (historique)
 
 Après une victoire ou une défaite, le joueur peut saisir un pseudo et enregistrer son score. Le Top 10 se recharge après l'enregistrement. Recharger la page ou redémarrer le backend conserve les résultats dans SQLite.
 
@@ -120,7 +125,7 @@ Le test POST a échoué avec 405 avant l'ajout de la route. Le test du calcul a 
 
 Limites : classement de démonstration sans comptes, avec scores déclarés par le client. Si le serveur enregistre un POST mais que sa réponse réseau est perdue, un nouvel essai peut créer un doublon ; une clé d'idempotence sera nécessaire pour garantir l'unicité dans ce cas.
 
-## Sprint 6 : accueil, menus et ambiance FPS rétro
+## Sprint 6 : accueil, menus et ambiance FPS rétro (historique)
 
 L'accueil présente la mission, le plan réel du niveau, les commandes et le classement. **Jouer** lance une nouvelle partie et capture la souris. Le Canvas occupe toute la fenêtre, avec un HUD pour la vie, l'arme, les munitions et l'ennemi. Le bouton **Plein écran** demande aussi le mode natif du navigateur ; s'il est refusé, une erreur explique que la partie reste jouable dans la fenêtre.
 
@@ -145,11 +150,68 @@ node --test src/fullscreen.test.js
 node --test src/shooting.test.js src/textures.test.js
 ```
 
-TDD : le contrôle navigateur a constaté l'absence de Jouer avant l'accueil ; les tests plein écran, impact et textures ont été observés en échec avant leur implémentation. Les 82 tests front et le build passent. Le scénario `frontend/tests/menus.playwright.js` est exécutable avec l'outil Playwright `browser_run_code_unsafe` et son argument `filename` ; il est distinct des tests Node lancés par `npm test`. Il couvre accueil, pause avec joueur blessé et scène immobile, reprise sans reset, retour, nouvelle partie, victoire, formulaire, rejouer et redimensionnement. Il vérifie aussi le tracé par lecture du Canvas : 0 pixel jaune avant, 381 pendant le tir, 0 après. Ce scénario simule seulement la capture native de souris et n'écrit aucun score de test.
+TDD : le contrôle navigateur a constaté l'absence de Jouer avant l'accueil ; les tests plein écran, impact et textures ont été observés en échec avant leur implémentation. À la fin du sprint 6, les 82 tests front et le build passaient. Le scénario `frontend/tests/menus.playwright.js`, depuis adapté au sprint 7, est exécutable avec l'outil Playwright `browser_run_code_unsafe` et son argument `filename` ; il est distinct des tests Node lancés par `npm test`. Dans sa version du sprint 6, il couvrait accueil, pause avec joueur blessé et scène immobile, reprise sans reset, retour, nouvelle partie, victoire, formulaire, rejouer et redimensionnement. Le contrôle du tracé avait donné 0 pixel jaune avant, 381 pendant le tir, 0 après. Ce scénario simulait seulement la capture native de souris et n'écrivait aucun score de test.
 
 L'utilisateur a confirmé dans son navigateur que le plein écran natif, les tirs et les menus fonctionnent. Le navigateur automatisé refuse le plein écran avec « not granted » : son message de repli est vérifié, tandis que le mode natif est validé manuellement. Les captures couvrent accueil et résultat en 1440 px et 390 px, ainsi que jeu et pause sur ordinateur.
 
-Deux illustrations originales ont été générées avec l'outil natif imagegen : `public/art/sector-entry.webp` pour l'accueil et `public/art/pistol-view.png` pour l'arme. Leurs prompts exacts et provenances sont conservés à côté des images ; aucun asset original de Doom n'est utilisé. Les textures du niveau sont produites par le code. Limites conservées : ennemi cubique, niveau fixe, tirs instantanés avec effet visuel plutôt que projectiles simulés, commandes clavier/souris sur ordinateur.
+Deux illustrations originales ont été générées avec l'outil natif imagegen : `public/art/sector-entry.webp` pour l'accueil et `public/art/pistol-view.png` pour l'arme. Leurs prompts exacts et provenances sont conservés à côté des images ; aucun asset original de Doom n'est utilisé. À cette étape, les textures du niveau étaient produites par le code et l'ennemi restait cubique. Le sprint 7 remplace les murs par des images et le cube par des gardes animés ; les tirs restent instantanés avec un effet visuel, sur ordinateur avec clavier et souris.
+
+## Sprint 7 : trois secteurs, plusieurs gardes et statistiques par pseudo
+
+Chaque secteur possède ses propres coordonnées, gardes et image de mur. Le plan de l'accueil utilise ces données : il dessine les murs, les gardes, le départ et la sortie, sans tracer une route artificielle.
+
+| Secteur | Taille | Forme | Gardes |
+| --- | --- | --- | --- |
+| Entrée | 12 m | Dépôt avec bloc central contournable à gauche ou à droite et petits îlots | 3 |
+| Maintenance | 14 m | Quatre pièces reliées par des ouvertures de 2 m | 4 |
+| Réacteur | 16 m | Arène avec piliers et couvertures dispersées | 5 |
+
+Les gardes commencent au repos. Chacun détecte le joueur à 4 m ou moins avec une ligne de vue dégagée ; un tir reçu le met aussi en alerte. Une fois alerté, il poursuit même après une perte de vue, contourne les murs et abandonne au-delà de 6 m. Sa vitesse reste de 1 m/s. À 1 m ou moins avec une vue dégagée, il enlève 1 PV puis attend une seconde ; les délais sont propres à chaque garde. Deux impacts éliminent uniquement le garde visé.
+
+La première et la deuxième sortie affichent **Niveau terminé**, puis **Niveau suivant**. Les PV restants sont conservés, tandis que la position et les gardes du nouveau niveau sont réinitialisés. Il n'y a ni pseudo ni score envoyé entre les niveaux. La dernière sortie affiche **Victoire** et propose le score de la campagne : 60 + 10 par PV restant, soit 70 à 90 points. Une défaite propose 0 point. **Jouer**, **Recommencer** et **Rejouer** repartent au premier niveau avec 3 PV.
+
+Pour comprendre par petites étapes :
+
+1. **Lire un plan.** Commencer par le premier test de `frontend/src/levelsLayout.test.js`, puis ouvrir `levels/entry.js`, `maintenance.js` et `reactor.js`. Un niveau contient `size`, `spawn`, `enemies`, `walls`, `exit` et `wallTexture`. Les tests vérifient les emplacements libres, les deux passages de l'Entrée et les trajets avec le vrai BFS.
+2. **Créer les gardes sans modifier le plan.** Le premier test de `campaign.test.js`, puis `newGame()` dans `game.js`, montrent la copie des données. `state.enemies` contient pour chaque garde son `id`, sa position, ses 2 PV, son délai, son alerte et son mode. Le test suivant explique `nextLevel()` et la conservation des PV.
+3. **Détecter avant de poursuivre.** Lire le premier test de `enemy.test.js`, puis les constantes et le début d'`advanceEnemy()` dans `enemy.js`. Continuer avec le test de perte de vue : la détection à 4 m exige une vue libre, la poursuite mémorisée s'arrête seulement au-delà de 6 m. Les attaques et la défaite suivent les règles déjà apprises.
+4. **Tirer sur le bon garde.** Le premier test de `shoot.test.js` appelle maintenant `shoot(state, enemy.id)`. Un identifiant inconnu ou `null` représente un tir manqué. `castShot()` garde le premier impact Three.js ; `canvas.js` récupère l'identifiant de ce garde avant d'appliquer les dégâts. Un mur bloque toujours le tir.
+5. **Animer sans changer les dégâts.** `enemyAnimation.test.js`, puis les quelques lignes d'`enemyFrame()` dans `enemyAnimation.js`, sélectionnent une pose de repos, deux poses de marche alternées à six images par seconde et une pose d'attaque. `room.js` et `canvas.js` appliquent ces quatre poses au sprite orienté vers la caméra. Les textures de murs viennent de `public/art/walls/` et le garde de `public/art/enemy-guard-sheet.png` ; prompts et provenance accompagnent les assets.
+6. **Afficher uniquement les données de l'API.** Lire le premier test de `playerStats.test.js`, puis `readPlayerStats()` dans `playerStats.js`. `PlayerStats.jsx` demande `GET /players/` lors de l'ouverture des statistiques et affiche pseudo, parties, total et moyenne. Chargement, réponse vide, erreur, réponse mal formée et nouvel essai sont prévus. Le front ne calcule pas ces agrégats et n'ajoute aucune route backend ; le format attendu est dans `frontend/API_CONTRACT.md`.
+7. **Relier les écrans.** Dans `main.jsx`, `campaignWon` distingue la dernière victoire des sorties intermédiaires. Le formulaire est proposé après cette dernière victoire ou une défaite. `Hud.jsx` affiche le nom et le numéro du niveau ainsi que les gardes encore vivants ; le passage au niveau suivant recharge la scène dans `canvas.js`.
+
+```sh
+# Depuis frontend/, lire puis lancer une petite règle à la fois.
+node --test --test-name-pattern='détection demande' src/enemy.test.js
+node --test src/shoot.test.js src/enemyAnimation.test.js
+node --test src/levelsLayout.test.js src/campaign.test.js
+node --test src/playerStats.test.js
+npm test
+```
+
+Validation locale du sprint 7 : **108 tests Node front**, build et quatre scénarios navigateur ci-dessous réussis. Les tests de `campaign.test.js` parcourent les trois cartes en simulant une visée parfaite contre les gardes visibles, sans tirer à travers les murs. Ils vérifient les règles, les collisions, les transitions et les PV ; ils ne mesurent pas la difficulté pour un joueur humain.
+
+Les scénarios navigateur se lancent séparément avec `browser_run_code_unsafe` et leur `filename` :
+
+- `frontend/tests/menus.playwright.js` : accueil, pause, reprise, taille du Canvas, tracé du tir et vrai trajet du premier niveau.
+- `frontend/tests/guards.playwright.js` : vrai déplacement vers un garde, détection, poursuite et animation visibles, dégâts au contact, deux tirs pour l'éliminer et arrêt de ses attaques.
+- `frontend/tests/campaign.playwright.js` : captures de chaque plan avant modification, perte réelle d'un PV au premier niveau, puis sorties temporairement élargies uniquement dans le navigateur pour vérifier les menus, les PV conservés, le formulaire final et Rejouer. Les sorties sont restaurées après chaque victoire et par rechargement ; ce scénario ne prétend pas parcourir réellement toute la campagne.
+- `frontend/tests/player-stats.playwright.js` : réponses de statistiques interceptées dans le navigateur pour vérifier le contrat et les états d'affichage, sans créer de données en base.
+
+La capture native de souris est simulée dans les scénarios de jeu. Les vérifications navigateur sont distinctes de `npm test`, et les scénarios de campagne et de gardes bloquent les POST de scores. Les résultats de la CI correspondent au commit publié et restent à consulter séparément.
+
+Les six visuels raster livrés ont leurs prompts exacts et leur provenance à côté des images :
+
+| Usage | Image | Prompt et provenance |
+| --- | --- | --- |
+| Accueil | [sector-entry.webp](frontend/public/art/sector-entry.webp) | [Provenance](frontend/public/art/sector-entry.provenance.json) |
+| Arme | [pistol-view.png](frontend/public/art/pistol-view.png) | [Prompt](frontend/public/art/pistol-view.prompt.json) |
+| Garde, quatre poses | [enemy-guard-sheet.png](frontend/public/art/enemy-guard-sheet.png) | [Prompts et provenance](frontend/public/art/enemy-guard-sheet.png.json), référence de création incluse |
+| Murs de l'Entrée | [entry.webp](frontend/public/art/walls/entry.webp) | [Provenance](frontend/public/art/walls/entry.provenance.json) |
+| Murs de Maintenance | [maintenance.webp](frontend/public/art/walls/maintenance.webp) | [Provenance](frontend/public/art/walls/maintenance.provenance.json) |
+| Murs du Réacteur | [reactor.webp](frontend/public/art/walls/reactor.webp) | [Provenance](frontend/public/art/walls/reactor.provenance.json) |
+
+Limites actuelles : les gardes n'ont pas de collisions entre eux ni avec le joueur ; les sprites sont des billboards à quatre poses, pas des personnages 3D. Le trajet utilise une grille d'un mètre. Les tirs restent instantanés, le score est déclaré par le client, et le frontend de statistiques dépend du contrat réellement servi par l'API développée par l'utilisateur.
 
 ## Premier trajet complet
 

@@ -396,6 +396,29 @@ h1 span {
   color: var(--muted);
   margin: 9px 0 17px;
 }
+.players-disclosure {
+  margin-top: 16px;
+  border-top: 1px solid #79825e66;
+  padding-top: 14px;
+}
+.players-disclosure summary {
+  color: #e9e3d4;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 0;
+}
+.players-disclosure summary::marker { color: #f8735d; }
+.players-disclosure summary:focus-visible { outline: 3px solid #f4c782; outline-offset: 4px; }
+.player-stats { margin-top: 14px; }
+.player-stats p { color: #b7b8a5; margin-bottom: 0; line-height: 1.5; }
+.player-stats .list-heading { align-items: flex-start; }
+.player-stats .utility { text-align: right; font-size: 14px; }
+.player-stats table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-top: 12px; }
+.player-stats caption { text-align: left; color: #c2c9af; font-size: 14px; padding-bottom: 12px; }
+.player-stats th, .player-stats td { padding: 10px 6px; text-align: right; border-bottom: 1px solid #79825e44; overflow-wrap: anywhere; }
+.player-stats th { font-size: 14px; font-weight: 600; }
+.player-stats th:first-child { width: 40%; text-align: left; }
+.player-stats td { color: #efc584; font-variant-numeric: tabular-nums; }
 .commands {
   max-width: 1440px;
   margin: auto;

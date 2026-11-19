@@ -1,8 +1,12 @@
 import React from 'react';
 import {PLAYER_MAX_HEALTH} from './game.js';
+import {LEVELS} from './levels/index.js';
 
 export function Hud({state}) {
   const health = state.playerHealth ?? PLAYER_MAX_HEALTH;
+  const levelIndex = state.levelIndex ?? 0;
+  const enemies = state.enemies ?? LEVELS[levelIndex].enemies;
+  const remaining = enemies.filter(enemy => enemy.health !== 0).length;
   return <footer className={`hud${health === 0 ? ' is-dead' : ''}`} aria-label="État du joueur">
     <div className="hud-cell weapon-cell"><span>Arme</span><strong>Pistolet</strong><small>Clic gauche / Espace</small></div>
     <div className="hud-cell ammo-cell"><span>Munitions</span><strong aria-label="Illimitées">∞</strong><small>Illimitées</small></div>
@@ -11,7 +15,7 @@ export function Hud({state}) {
       <strong>{health}<small> / {PLAYER_MAX_HEALTH}</small></strong>
       <progress id="player-health" value={health} max={PLAYER_MAX_HEALTH} />
     </div>
-    <div className="hud-cell enemy-cell"><span>Ennemi</span><strong>{state.targetHealth ?? 2}<small> PV</small></strong><small>{state.targetHealth === 0 ? 'Neutralisé' : 'Hostile'}</small></div>
-    <div className="hud-cell mission-cell"><span>Objectif</span><strong>La sortie</strong><small>Survivez. Explorez. Sortez.</small></div>
+    <div className="hud-cell enemy-cell"><span>Gardes</span><strong>{remaining}<small> / {enemies.length}</small></strong><small>{remaining === 0 ? 'Zone nettoyée' : 'Encore en vie'}</small></div>
+    <div className="hud-cell mission-cell"><span>Objectif : sortie</span><strong>{LEVELS[levelIndex].name}</strong><small>Niveau {levelIndex + 1} / {LEVELS.length}</small></div>
   </footer>;
 }

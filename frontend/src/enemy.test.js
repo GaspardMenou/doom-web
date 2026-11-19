@@ -1,153 +1,150 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {newGame} from './game.js';
+import {newGame, shoot} from './game.js';
 import {advanceEnemy} from './enemy.js';
-import {canStand, hasLineOfSight} from './level.js';
+import {canStand} from './level.js';
 
-test('l’ennemi se rapproche du joueur à un mètre par seconde', () => {
-  const state = newGame();
-  state.player.x = state.enemy.x = 3.5;
-  const next = advanceEnemy(state, 1);
+function scenario(enemies = [{}], player = {x: 0, z: 2, angle: 0}) {
+  return {...newGame(), player, enemies: enemies.map((enemy, index) => ({
+    id: `test-${index}`, x: 0, z: 5, health: 2, attackCooldown: 0,
+    alerted: false, mode: 'idle', ...enemy,
+  }))};
+}
 
-  assert.equal(next.enemy.x, 3.5);
-  assert.equal(next.enemy.z, -1);
-  assert.equal(next.playerHealth, 3);
+test('la détection demande une vue dégagée et une distance de quatre mètres maximum', () => {
+  const near = scenario([{}], {x: 0, z: 1, angle: 0});
+  assert.equal(advanceEnemy(near, 0.05).enemies[0].alerted, true);
+  const far = scenario([{}], {x: 0, z: 0.99, angle: 0});
+  const next = advanceEnemy(far, 0.05);
+  assert.equal(next.enemies[0].alerted, false);
+  assert.equal(next.enemies[0].z, 5);
+  assert.equal(next.enemies[0].mode, 'idle');
+  const hidden = scenario([{z: -4}], {x: 0, z: 0, angle: 0});
+  assert.equal(advanceEnemy(hidden, 0.05).enemies[0].alerted, false);
 });
 
-test('une poursuite en diagonale conserve la même vitesse', () => {
-  const state = newGame();
-  state.enemy = {x: 3, z: -2};
-  state.player = {x: 4, z: 0, angle: 0};
-  const next = advanceEnemy(state, 1);
-
-  assert.ok(next.enemy.x > state.enemy.x);
-  assert.ok(next.enemy.z > state.enemy.z);
-  assert.ok(Math.abs(Math.hypot(next.enemy.x - 3, next.enemy.z + 2) - 1) < 0.000001);
+test('un ennemi alerté mémorise le joueur derrière un mur, puis le perd au-delà de six mètres', () => {
+  const hidden = scenario([{z: -4, alerted: true}], {x: 0, z: 0, angle: 0});
+  const chasing = advanceEnemy(hidden, 0.05);
+  assert.equal(chasing.enemies[0].alerted, true);
+  assert.equal(chasing.enemies[0].mode, 'walk');
+  assert.ok(canStand(chasing.enemies[0].x, chasing.enemies[0].z, 0.5));
+  const edge = scenario([{x: -3, z: 5, alerted: true}], {x: 3, z: 5, angle: 0});
+  assert.equal(advanceEnemy(edge, 0.05).enemies[0].alerted, true);
+  edge.player.x = 3.01;
+  const lost = advanceEnemy(edge, 0.05).enemies[0];
+  assert.equal(lost.alerted, false);
+  assert.equal(lost.x, -3);
+  assert.equal(lost.mode, 'idle');
 });
 
-test('l’ennemi s’arrête à un mètre du joueur sans le dépasser', () => {
-  const state = newGame();
-  state.enemy.z = 0.99;
+test('un impact alerte aussi un garde hors du rayon de détection', () => {
+  const state = scenario([{}], {x: 0, z: 0, angle: 0});
+  const hit = shoot(state, state.enemies[0].id);
+  assert.equal(hit.enemies[0].alerted, true);
+  assert.ok(advanceEnemy(hit, 0.05).enemies[0].z < 5);
+  const distant = scenario([{x: -3.5}], {x: 3.5, z: 5, angle: 0});
+  const alerted = shoot(distant, distant.enemies[0].id);
+  assert.equal(alerted.enemies[0].alerted, true);
+  assert.equal(advanceEnemy(alerted, 0.05).enemies[0].alerted, false);
+});
+
+test('la poursuite avance à un mètre par seconde, y compris en diagonale', () => {
+  const straight = advanceEnemy(scenario(), 1).enemies[0];
+  assert.equal(straight.z, 4);
+  assert.equal(straight.mode, 'walk');
+  const diagonal = scenario([{z: 4}], {x: 1, z: 2, angle: 0});
+  const next = advanceEnemy(diagonal, 1).enemies[0];
+  assert.ok(Math.abs(Math.hypot(next.x, next.z - 4) - 1) < 0.000001);
+});
+
+test('un garde s’arrête à portée et une position confondue ne produit pas de NaN', () => {
+  const next = advanceEnemy(scenario([{z: 3.01}]), 0.05);
+  assert.equal(next.enemies[0].z, 3);
+  assert.equal(next.playerHealth, 2);
+  assert.equal(next.enemies[0].mode, 'attack');
+  const overlap = advanceEnemy(scenario([{z: 2}]), 0.05);
+  assert.equal(overlap.enemies[0].x, 0);
+  assert.equal(overlap.enemies[0].z, 2);
+  assert.equal(overlap.playerHealth, 2);
+});
+
+test('chaque attaque attend une seconde et son animation dure les premiers 0,3 seconde', () => {
+  let state = advanceEnemy(scenario([{z: 3}]), 0.05);
+  assert.equal(state.playerHealth, 2);
+  assert.equal(state.enemies[0].attackCooldown, 1);
+  state = advanceEnemy(state, 0.2);
+  assert.equal(state.enemies[0].mode, 'attack');
+  state = advanceEnemy(state, 0.11);
+  assert.equal(state.enemies[0].mode, 'idle');
+  assert.equal(state.playerHealth, 2);
+  state = advanceEnemy(state, 0.69);
+  assert.equal(state.playerHealth, 1);
+  assert.equal(state.enemies[0].attackCooldown, 1);
+});
+
+test('les délais restent indépendants et diminuent aussi sans alerte', () => {
+  const state = scenario([{z: 3, attackCooldown: 0.4}, {x: 1, z: 2}]);
   const next = advanceEnemy(state, 0.05);
-
-  assert.deepEqual(next.enemy, {x: 0, z: 1});
   assert.equal(next.playerHealth, 2);
+  assert.ok(Math.abs(next.enemies[0].attackCooldown - 0.35) < 0.000001);
+  assert.equal(next.enemies[1].attackCooldown, 1);
+  const far = scenario([{x: -3.5, attackCooldown: 0.8}], {x: 3.5, z: 5, angle: 0});
+  assert.ok(Math.abs(advanceEnemy(far, 0.25).enemies[0].attackCooldown - 0.55) < 0.000001);
 });
 
-test('un ennemi déjà sur le joueur attaque sans produire de coordonnées invalides', () => {
-  const state = newGame();
-  state.enemy = {x: state.player.x, z: state.player.z};
-  const next = advanceEnemy(state, 0.05);
-
-  assert.deepEqual(next.enemy, state.enemy);
-  assert.equal(next.playerHealth, 2);
-});
-
-test('une attaque retire un point de vie puis attend une seconde', () => {
-  const state = newGame();
-  state.enemy.z = 1;
-  let next = advanceEnemy(state, 0.05);
-
-  assert.equal(next.playerHealth, 2);
-  assert.equal(next.attackCooldown, 1);
-  next = advanceEnemy(next, 0.99);
-  assert.equal(next.playerHealth, 2);
-  next = advanceEnemy(next, 0.01);
-  assert.equal(next.playerHealth, 1);
-  assert.equal(next.attackCooldown, 1);
-});
-
-test('le délai entre attaques diminue aussi hors de portée', () => {
-  const state = newGame();
-  state.attackCooldown = 0.8;
-  const next = advanceEnemy(state, 0.25);
-
-  assert.ok(Math.abs(next.attackCooldown - 0.55) < 0.000001);
-  assert.equal(next.playerHealth, 3);
-});
-
-test('le dernier point de vie déclenche la défaite et les points de vie restent à zéro', () => {
-  const state = newGame();
-  state.enemy.z = 1;
+test('plusieurs ennemis peuvent attaquer ensemble sans rendre la vie négative', () => {
+  const state = scenario([{z: 3}, {x: 1, z: 2}]);
+  assert.equal(advanceEnemy(state, 0.05).playerHealth, 1);
   state.playerHealth = 1;
   const next = advanceEnemy(state, 0.05);
-
   assert.equal(next.playerHealth, 0);
   assert.equal(next.status, 'lost');
-  assert.deepEqual(advanceEnemy(next, 1), next);
+  assert.ok(next.enemies.every(enemy => enemy.mode === 'attack'));
 });
 
-test('sans temps écoulé, avec un ennemi mort ou après la défaite, rien ne change', () => {
-  for (const dt of [0, -1]) {
-    const state = newGame();
-    state.enemy.z = 1;
-    assert.deepEqual(advanceEnemy(state, dt), state);
-  }
+test('un mur empêche une attaque même avec un garde alerté à moins d’un mètre', () => {
+  const state = scenario([{z: -1, alerted: true}], {x: 0, z: -0.1, angle: 0});
+  assert.equal(advanceEnemy(state, 0.05).playerHealth, 3);
+});
 
-  for (const changes of [{targetHealth: 0}, {status: 'lost'}]) {
-    const state = {...newGame(), ...changes, attackCooldown: 0.5};
-    assert.deepEqual(advanceEnemy(state, 1), state);
+test('un mort ne poursuit ni n’attaque et les autres gardes continuent', () => {
+  const state = scenario([{z: 3, health: 0, mode: 'dead'}, {}]);
+  const next = advanceEnemy(state, 0.05);
+  assert.equal(next.enemies[0], state.enemies[0]);
+  assert.equal(next.playerHealth, 3);
+  assert.equal(next.enemies[1].mode, 'walk');
+});
+
+test('sans temps écoulé ou après la fin de partie, aucun garde ne change', () => {
+  const state = scenario();
+  assert.equal(advanceEnemy(state, 0), state);
+  assert.equal(advanceEnemy(state, -1), state);
+  for (const status of ['lost', 'won']) {
+    const ended = {...state, status};
+    assert.equal(advanceEnemy(ended, 0.05), ended);
   }
 });
 
-test('30 et 60 images par seconde donnent la même poursuite et les mêmes attaques', () => {
+test('30 et 60 images par seconde donnent les mêmes attaques et positions', () => {
   function run(fps) {
-    let state = newGame();
-    state.player.x = state.enemy.x = 3.5;
+    let state = scenario([{}], {x: 0, z: 1, angle: 0});
     for (let frame = 0; frame < fps * 4.5; frame++) state = advanceEnemy(state, 1 / fps);
     return state;
   }
-
   const at30 = run(30);
   const at60 = run(60);
-  assert.ok(Math.abs(at30.enemy.z - 1) < 0.000001);
   assert.equal(at30.playerHealth, 1);
-  assert.ok(Math.abs(at30.enemy.z - at60.enemy.z) < 0.000001);
-  assert.ok(Math.abs(at30.attackCooldown - at60.attackCooldown) < 0.000001);
   assert.equal(at30.playerHealth, at60.playerHealth);
-  assert.equal(at30.status, at60.status);
+  assert.ok(Math.abs(at30.enemies[0].z - at60.enemies[0].z) < 0.000001);
+  assert.ok(Math.abs(at30.enemies[0].attackCooldown - at60.enemies[0].attackCooldown) < 0.000001);
 });
 
-test('ni la poursuite ni les attaques ne modifient l’état précédent', () => {
-  for (const z of [-2, 1]) {
-    const state = newGame();
-    state.enemy.z = z;
-    const before = structuredClone(state);
-    const next = advanceEnemy(state, 0.05);
-
-    assert.deepEqual(state, before);
-    assert.notEqual(next, state);
-    assert.notEqual(next.enemy, state.enemy);
-  }
-});
-
-test('la cloison bloque une attaque même si le joueur est à moins d’un mètre', () => {
-  const state = newGame();
-  state.enemy.z = -1.1;
-  state.player.z = -0.15;
+test('la poursuite, la détection et les attaques ne modifient pas l’état précédent', () => {
+  const state = scenario([{z: 3}, {}]);
+  const before = structuredClone(state);
   const next = advanceEnemy(state, 0.05);
-
-  assert.equal(next.playerHealth, 3);
-  assert.ok(next.enemy.x > state.enemy.x);
-  assert.ok(canStand(next.enemy.x, next.enemy.z, 0.5));
-});
-
-test('l’ennemi contourne la cloison des deux côtés et rejoint aussi un joueur collé au mur', () => {
-  for (const [enemyZ, playerZ] of [[-2, 2], [2, -2], [-2, -0.15]]) {
-    let state = newGame();
-    state.enemy.z = enemyZ;
-    state.player.z = playerZ;
-    let wentAround = false;
-
-    for (let frame = 0; frame < 1000 && state.playerHealth === 3; frame++) {
-      state = advanceEnemy(state, 0.05);
-      assert.ok(canStand(state.enemy.x, state.enemy.z, 0.5));
-      if (state.enemy.x >= 2.5 - 0.000001) wentAround = true;
-    }
-
-    assert.ok(wentAround);
-    assert.equal(state.playerHealth, 2);
-    assert.ok(Math.hypot(state.player.x - state.enemy.x, state.player.z - state.enemy.z) <= 1.000001);
-    assert.ok(hasLineOfSight(state.enemy, state.player));
-  }
+  assert.deepEqual(state, before);
+  assert.notEqual(next.enemies, state.enemies);
+  assert.notEqual(next.enemies[0], state.enemies[0]);
 });

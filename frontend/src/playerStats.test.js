@@ -18,7 +18,18 @@ test('un joueur sans partie et une moyenne décimale sont acceptés', () => {
 
 test('une réponse API incomplète ou invalide produit une erreur compréhensible', () => {
   const valid = {player: 'Ada', total_points: 150, games_played: 2, average_points: 75};
-  for (const rows of [null, {}, [null], [{...valid, player: ''}], [{...valid, games_played: -1}], [{...valid, games_played: 1.5}], [{...valid, total_points: '150'}], [{...valid, average_points: null}], [{...valid, average_points: Infinity}]]) {
+  const invalidResponses = [
+    null,
+    {},
+    [null],
+    [{...valid, player: ''}],
+    [{...valid, games_played: -1}],
+    [{...valid, games_played: 1.5}],
+    [{...valid, total_points: '150'}],
+    [{...valid, average_points: null}],
+    [{...valid, average_points: Infinity}],
+  ];
+  for (const rows of invalidResponses) {
     assert.throws(() => readPlayerStats(rows), /statistiques.*illisibles/);
   }
 });

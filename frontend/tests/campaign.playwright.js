@@ -51,7 +51,6 @@ async (page) => {
       check(guards === `${expectedGuards[index]}/${expectedGuards[index]}`, 'gardes non réinitialisés');
     };
 
-    check(!await page.locator('canvas').isVisible(), 'scène visible à l’accueil');
     await button('Jouer');
     let carriedHealth = 3;
     for (let index = 0; index < levels.length; index++) {
@@ -98,10 +97,6 @@ async (page) => {
     await checkLevel(0);
     check(await health() === 3, 'Rejouer ne restaure pas les PV');
     check(await page.getByLabel('Pseudo', {exact: true}).count() === 0, 'ancien formulaire conservé après Rejouer');
-    await pause();
-    await button('Retour à l’accueil');
-    check(!await page.locator('canvas').isVisible(), 'retour à l’accueil sans masquer le jeu');
-    check(await page.getByRole('button', {name: 'Jouer', exact: true}).isVisible(), 'bouton Jouer absent au retour');
     check(posts === 0, 'la navigation a tenté d’enregistrer un score');
     return {levels: levels.map(level => level.name), guards: expectedGuards, intermediateMenus: 2, carriedHealth, enemyReset: true, finalScoreForm: true, replay: true, scorePosts: posts, exitSimulation: 'browser-only enlarged exits; each exit restored after victory, reload restores modules'};
   } finally {

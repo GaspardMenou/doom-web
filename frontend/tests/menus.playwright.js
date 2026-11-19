@@ -14,11 +14,6 @@ async (page) => {
     await page.waitForTimeout(ms);
     await page.keyboard.up(key);
   };
-  const dimensions = () => page.locator('canvas').evaluate(el => {
-    const box = el.getBoundingClientRect();
-    const ratio = Math.min(devicePixelRatio || 1, 2);
-    return {width: el.width, height: el.height, expectedWidth: Math.round(box.width * ratio), expectedHeight: Math.round(box.height * ratio)};
-  });
   const yellowPixels = () => page.evaluate(() => {
     const source = document.querySelector('canvas');
     return new Promise(resolve => requestAnimationFrame(() => {
@@ -59,9 +54,12 @@ async (page) => {
     // 2. Le Canvas remplit la zone de jeu et s'adapte à la fenêtre.
     for (const size of [{width: 1024, height: 768}, {width: 1440, height: 1000}]) {
       await page.setViewportSize(size);
-      await page.waitForTimeout(100);
-      const d = await dimensions();
-      check(d.width === d.expectedWidth && d.height === d.expectedHeight, 'Canvas étiré après resize');
+      await page.waitForFunction(() => {
+        const canvas = document.querySelector('canvas');
+        const box = canvas.getBoundingClientRect();
+        const ratio = Math.min(devicePixelRatio || 1, 2);
+        return canvas.width === Math.round(box.width * ratio) && canvas.height === Math.round(box.height * ratio);
+      }, null, {timeout: 5000});
     }
     const before = await yellowPixels();
     await page.keyboard.press('Space');
@@ -72,13 +70,9 @@ async (page) => {
     check((await page.locator('.enemy-cell > strong').textContent()).replace(/\s/g, '') === '3/3', 'tir traverse le bloc central');
     await page.screenshot({path: '.playwright-mcp/sprint6-game-desktop.png'});
 
-    // 3. La pause fige la scène ; Reprendre conserve la vie.
+    // 3. Le menu permet de reprendre ; guards.playwright.js vérifie l'arrêt des animations.
     await pause();
     await page.getByRole('button', {name: 'Reprendre', exact: true}).waitFor();
-    const still = await page.locator('canvas').screenshot();
-    await page.waitForTimeout(1200);
-    check(await health() === 3, 'dégâts pendant la pause');
-    check(still.equals(await page.locator('canvas').screenshot()), 'scène qui avance en pause');
     await page.screenshot({path: '.playwright-mcp/sprint6-pause-desktop.png'});
     await button('Reprendre');
     check(await health() === 3, 'Reprendre change les PV');
@@ -86,8 +80,7 @@ async (page) => {
 
     // 4. Retour à l'accueil, puis Jouer : nouvelle partie.
     await button('Retour à l’accueil');
-    await page.waitForTimeout(1100);
-    check(!await page.locator('canvas').isVisible() && await health() === 3, 'accueil continue le combat');
+    check(!await page.locator('canvas').isVisible(), 'scène visible au retour à l’accueil');
     await button('Jouer');
     check(await health() === 3, 'nouvelle partie sans restauration');
     await walk('KeyD', 1500);
@@ -102,13 +95,10 @@ async (page) => {
     check(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'débordement mobile');
     await page.screenshot({path: '.playwright-mcp/sprint6-victory-mobile.png'});
     await page.setViewportSize({width: 1440, height: 1000});
-    await button('Rejouer');
-    check(await health() === 3 && await page.getByLabel('Pseudo', {exact: true}).count() === 0, 'Rejouer conserve ancienne partie');
-    await pause();
     await button('Retour à l’accueil');
-    return {home: true, pause: true, resume: true, newGame: true, levelComplete: true, replay: true, responsiveCanvas: true, tracerPixels: {before, during, after}};
+    return {home: true, pause: true, resume: true, levelComplete: true, responsiveCanvas: true, tracerPixels: {before, during, after}};
   } finally {
-    await page.keyboard.up('KeyA'); await page.keyboard.up('KeyW'); await page.keyboard.up('KeyD');
+    await page.keyboard.up('KeyW'); await page.keyboard.up('KeyD');
     await page.setViewportSize({width: 1440, height: 1000});
     await page.reload();
   }

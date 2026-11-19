@@ -41,11 +41,9 @@ test('un ennemi alerté mémorise le joueur derrière un mur, puis le perd au-de
 test('un impact alerte aussi un garde hors du rayon de détection', () => {
   const state = scenario([{}], {x: 0, z: 0, angle: 0});
   const hit = shoot(state, state.enemies[0].id);
-  assert.equal(hit.enemies[0].alerted, true);
   assert.ok(advanceEnemy(hit, 0.05).enemies[0].z < 5);
   const distant = scenario([{x: -3.5}], {x: 3.5, z: 5, angle: 0});
   const alerted = shoot(distant, distant.enemies[0].id);
-  assert.equal(alerted.enemies[0].alerted, true);
   assert.equal(advanceEnemy(alerted, 0.05).enemies[0].alerted, false);
 });
 

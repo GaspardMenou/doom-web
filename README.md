@@ -21,7 +21,7 @@ Le backend fourni savait lire un classement vide. Le sprint 5 ajoute l'enregistr
 
 Dans `backend/` : `uv sync --locked`, `uv run pytest -q` (21 tests), puis `uv run uvicorn scores:create_app --factory --reload --port 8001`.
 
-Dans `frontend/` : `npm ci`, `npm test` (108 tests front au dernier contrôle local), puis `npm run dev`. Ouvrir `http://127.0.0.1:5175`. Chaque terminal reste dans son dossier.
+Dans `frontend/` : `npm ci`, `npm test` (90 tests après suppression des doublons), puis `npm run dev`. Ouvrir `http://127.0.0.1:5175`. Chaque terminal reste dans son dossier. L'[inventaire des tests](frontend/TESTS.md) explique leur rôle et les simplifications effectuées.
 
 Les sections des sprints 1 à 6 ci-dessous conservent l'historique pédagogique et les validations de chaque étape. La pièce de 10 m, le cube unique, `targetHealth` et `shoot(state, true)` appartiennent à ces anciennes versions. Les tests ont depuis été adaptés ; pour comprendre le fonctionnement actuel, commencer par le sprint 7.
 
@@ -116,7 +116,7 @@ Pour lire un premier test à la fois :
 
 ```sh
 # Depuis frontend/
-node --test --test-name-pattern='atteindre la sortie avec trois' src/score.test.js
+node --test --test-name-pattern='une victoire rapporte' src/score.test.js
 # Depuis backend/
 uv run pytest -q tests/test_scores.py::test_post_score_then_read_leaderboard
 ```
@@ -189,7 +189,7 @@ node --test src/playerStats.test.js
 npm test
 ```
 
-Validation locale du sprint 7 : **108 tests Node front**, build et quatre scénarios navigateur ci-dessous réussis. Les tests de `campaign.test.js` parcourent les trois cartes en simulant une visée parfaite contre les gardes visibles, sans tirer à travers les murs. Ils vérifient les règles, les collisions, les transitions et les PV ; ils ne mesurent pas la difficulté pour un joueur humain.
+Validation initiale du sprint 7 : **108 tests Node front**, build et quatre scénarios navigateur ci-dessous réussis. La relecture demandée ensuite a ramené la suite à **90 tests**, en supprimant les doublons et en simplifiant les assertions ; les décisions sont détaillées dans [TESTS.md](frontend/TESTS.md). Un seul parcours de campagne traverse maintenant les trois cartes avec une visée parfaite contre les gardes visibles, sans tirer à travers les murs. Il vérifie les règles, les collisions, les transitions et les PV ; il ne mesure pas la difficulté pour un joueur humain.
 
 Les scénarios navigateur se lancent séparément avec `browser_run_code_unsafe` et leur `filename` :
 

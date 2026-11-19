@@ -2,27 +2,27 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {createApi, jsonBody} from './api.js';
 
-test('204 does not try to parse an empty body', async () => {
-  const api = createApi('http://localhost:5001/', async (url, options) => {
-    assert.equal(url, 'http://localhost:5001/tasks/7');
-    assert.equal(options.method, 'DELETE');
+test('une réponse 204 ne tente pas de lire un JSON vide', async () => {
+  const api = createApi('http://localhost:8001/', async url => {
+    assert.equal(url, 'http://localhost:8001/scores/');
     return new Response(null, {status: 204});
   });
-  assert.equal(await api('/tasks/7', {method: 'DELETE'}), null);
+  assert.equal(await api('/scores/'), null);
 });
 
-test('a failed delete is rejected instead of treated as success', async () => {
-  const api = createApi('http://localhost:5001', async () => new Response('', {status: 500}));
-  await assert.rejects(api('/tasks/7', {method: 'DELETE'}), /500/);
+test('une erreur HTTP est signalée au lieu de passer pour un succès', async () => {
+  const api = createApi('http://localhost:8001', async () => new Response('', {status: 500}));
+  await assert.rejects(api('/scores/'), /500/);
 });
 
-test('PATCH sends a boolean in a JSON body', () => {
-  const options = jsonBody('PATCH', {done: false});
+test('le score est envoyé en POST avec un corps JSON', () => {
+  const options = jsonBody('POST', {player: 'Ada', points: 80});
+  assert.equal(options.method, 'POST');
   assert.equal(options.headers['Content-Type'], 'application/json');
-  assert.equal(JSON.parse(options.body).done, false);
+  assert.deepEqual(JSON.parse(options.body), {player: 'Ada', points: 80});
 });
 
-test('network failures explain the next diagnostic step', async () => {
-  const api = createApi('http://localhost:5001', async () => { throw new TypeError('Failed to fetch'); });
-  await assert.rejects(api('/tasks/'), /backend.*URL.*CORS/);
+test('une panne réseau indique quoi vérifier', async () => {
+  const api = createApi('http://localhost:8001', async () => { throw new TypeError('Failed to fetch'); });
+  await assert.rejects(api('/scores/'), /backend.*URL.*CORS/);
 });

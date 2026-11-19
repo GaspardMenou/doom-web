@@ -12,7 +12,7 @@ function disposeRoom(scene) {
   }
 }
 
-test('une image de mur est chargée une fois puis répétée séparément sur chaque mur', () => {
+test('les images de murs et de gardes remplacent les textures de secours sans les partager', () => {
   const level = LEVELS[1];
   const loads = new Map();
   const scene = createRoom(level, (url, callback) => loads.set(url, callback));
@@ -20,7 +20,7 @@ test('une image de mur est chargée une fois puis répétée séparément sur ch
   const walls = scene.children.filter(object => object.geometry.type === 'BoxGeometry' && !object.userData.enemyId);
   let oldMapsDisposed = 0;
   for (const wall of walls) wall.material.map.addEventListener('dispose', () => oldMapsDisposed++);
-  const source = new Texture();
+  const source = new Texture({src: 'test-wall.webp'});
   let sourceDisposed = 0;
   source.addEventListener('dispose', () => sourceDisposed++);
 
@@ -31,24 +31,23 @@ test('une image de mur est chargée une fois puis répétée séparément sur ch
   assert.equal(new Set(walls.map(wall => wall.material.map)).size, walls.length);
   for (const wall of walls) {
     const map = wall.material.map;
-    assert.notEqual(map, source);
+    assert.equal(map.image, source.image);
     assert.equal(map.magFilter, NearestFilter);
     assert.equal(map.minFilter, NearestFilter);
     assert.equal(map.colorSpace, SRGBColorSpace);
     assert.equal(map.wrapS, RepeatWrapping);
     assert.equal(map.wrapT, RepeatWrapping);
     assert.deepEqual(map.repeat.toArray(), [Math.max(wall.geometry.parameters.width, wall.geometry.parameters.depth) / 2, 1.5]);
-    assert.equal(wall.material.color.getHex(), 0xffffff);
   }
   const models = scene.children.filter(object => object.name.startsWith('enemy-model:'));
-  const enemyImage = new Texture();
+  const enemyImage = new Texture({src: 'test-guard.png'});
   let oldEnemyMapDisposed = 0;
   for (const model of models) model.material.map.addEventListener('dispose', () => oldEnemyMapDisposed++);
   loads.get('/art/enemy-guard-sheet.png')(enemyImage);
   assert.equal(oldEnemyMapDisposed, models.length);
   assert.equal(new Set(models.map(model => model.material.map)).size, models.length);
   for (const model of models) {
-    assert.notEqual(model.material.map, enemyImage);
+    assert.equal(model.material.map.image, enemyImage.image);
     assert.equal(model.material.map.magFilter, NearestFilter);
     assert.equal(model.material.map.minFilter, NearestFilter);
     assert.equal(model.material.map.colorSpace, SRGBColorSpace);

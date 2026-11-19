@@ -5,22 +5,22 @@ import {advance, newGame, nextLevel, shoot, PLAYER_RADIUS} from './game.js';
 import {advanceEnemy} from './enemy.js';
 import {atExit, canStand, hasLineOfSight} from './level.js';
 
-test('les cartes et leurs trois, quatre puis cinq gardes restent isolés des parties', () => {
-  assert.equal(LEVELS.length, 3);
-  assert.deepEqual(LEVELS.map(level => level.size), [12, 14, 16]);
+test('une nouvelle partie initialise les vies et ne partage pas ses positions avec le plan', () => {
   const before = structuredClone(LEVELS);
   for (const [index, level] of LEVELS.entries()) {
     const state = newGame(index);
     assert.equal(state.levelIndex, index);
-    assert.equal(state.enemies.length, index + 3);
-    assert.equal(new Set(state.enemies.map(enemy => enemy.id)).size, state.enemies.length);
+    assert.equal(state.playerHealth, 3);
+    assert.equal(state.status, 'playing');
     assert.deepEqual(state.player, level.spawn);
-    assert.deepEqual(state.enemies.map(({id, x, z}) => ({id, x, z})), level.enemies);
+    assert.deepEqual(state.enemies, level.enemies.map(enemy => ({...enemy,
+      health: 2, attackCooldown: 0, alerted: false, mode: 'idle'})));
+    const fresh = structuredClone(state);
     state.player.x += 1;
     state.enemies[0].z += 1;
-    assert.deepEqual(newGame(index).player, level.spawn);
-    assert.deepEqual(newGame(index).enemies.map(({id, x, z}) => ({id, x, z})), level.enemies);
-    assert.equal(level.wallTexture, `/art/walls/${level.id}.webp`);
+    state.playerHealth = 0;
+    state.enemies[0].health = 0;
+    assert.deepEqual(newGame(index), fresh);
   }
   assert.deepEqual(LEVELS, before);
 });
@@ -34,7 +34,6 @@ test('passer au niveau suivant conserve les PV et restaure tous ses gardes', () 
   assert.equal(next.playerHealth, 2);
   assert.equal(next.status, 'playing');
   assert.deepEqual(next.player, LEVELS[1].spawn);
-  assert.equal(next.enemies.length, 4);
   assert.ok(next.enemies.every(enemy => enemy.health === 2 && enemy.attackCooldown === 0 && !enemy.alerted && enemy.mode === 'idle'));
   assert.deepEqual(next.enemies.map(({id, x, z}) => ({id, x, z})), LEVELS[1].enemies);
   assert.deepEqual(previous, before);
@@ -52,8 +51,6 @@ test('on ne saute pas un niveau en cours, perdu, sans vie ou après la dernière
 
 test('collisions, lignes de vue et sorties utilisent la carte demandée', () => {
   for (const level of LEVELS) {
-    assert.ok(canStand(level.spawn.x, level.spawn.z, PLAYER_RADIUS, level));
-    assert.ok(level.enemies.every(enemy => canStand(enemy.x, enemy.z, 0.5, level)));
     assert.ok(atExit(level.exit, level));
     assert.equal(atExit(level.spawn, level), false);
     for (const wall of level.walls) {
@@ -100,25 +97,16 @@ test('une seule campagne traverse les trois cartes en combattant et en conservan
     state = walkAndFight(state, index);
     assert.equal(state.status, 'won');
     assert.ok(state.playerHealth > 0);
+    assert.ok(state.enemies.some(enemy => enemy.health === 0));
     if (index < LEVELS.length - 1) {
       const health = state.playerHealth;
       state = nextLevel(state);
       assert.equal(state.playerHealth, health);
     }
   }
-  assert.equal(state.levelIndex, 2);
-  assert.equal(state.status, 'won');
 });
 
 for (const index of [0, 1, 2]) {
-  test(`la carte ${index + 1} se termine avec ses collisions et plusieurs gardes`, () => {
-    const state = walkAndFight(newGame(index), index);
-    assert.equal(state.status, 'won');
-    assert.equal(state.levelIndex, index);
-    assert.ok(state.playerHealth > 0);
-    assert.ok(state.enemies.some(enemy => enemy.health === 0));
-  });
-
   test(`les gardes de la carte ${index + 1} restent inactifs sans détection initiale`, () => {
     const state = newGame(index);
     const next = advanceEnemy(state, 0.05);

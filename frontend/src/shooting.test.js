@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {BoxGeometry, GridHelper, Mesh, MeshBasicMaterial, PerspectiveCamera} from 'three';
-import {castShot, hitsTarget} from './shooting.js';
+import {BoxGeometry, BufferGeometry, Line, LineBasicMaterial, Mesh, MeshBasicMaterial, PerspectiveCamera, Vector3} from 'three';
+import {castShot} from './shooting.js';
 import {createRoom} from './room.js';
 
 test('le tir donne le point du premier impact sur le mur devant la cible', () => {
@@ -24,38 +24,12 @@ test('un tir dans le vide ne produit aucun impact', () => {
   assert.equal(castShot(camera, []), null);
 });
 
-test('une cible devant le viseur est touchée avant le premier rendu', () => {
-  const camera = new PerspectiveCamera(75, 1, 0.1, 100);
-  const target = new Mesh(new BoxGeometry(1, 1, 1), new MeshBasicMaterial());
-  target.position.z = -4;
-
-  assert.equal(hitsTarget(camera, [target], target), true);
-});
-
-test('une cible à côté du viseur ne reçoit pas le tir', () => {
-  const camera = new PerspectiveCamera(75, 1, 0.1, 100);
-  const target = new Mesh(new BoxGeometry(1, 1, 1), new MeshBasicMaterial());
-  target.position.set(3, 0, -4);
-
-  assert.equal(hitsTarget(camera, [target], target), false);
-});
-
 test('une cible derrière le joueur ne reçoit pas le tir', () => {
   const camera = new PerspectiveCamera(75, 1, 0.1, 100);
   const target = new Mesh(new BoxGeometry(1, 1, 1), new MeshBasicMaterial());
   target.position.z = 4;
 
-  assert.equal(hitsTarget(camera, [target], target), false);
-});
-
-test('un mur devant la cible bloque le tir même si la cible est listée en premier', () => {
-  const camera = new PerspectiveCamera(75, 1, 0.1, 100);
-  const target = new Mesh(new BoxGeometry(1, 1, 1), new MeshBasicMaterial());
-  const wall = new Mesh(new BoxGeometry(2, 2, 1), new MeshBasicMaterial());
-  target.position.z = -4;
-  wall.position.z = -2;
-
-  assert.equal(hitsTarget(camera, [target, wall], target), false);
+  assert.equal(castShot(camera, [target]), null);
 });
 
 test('un mur derrière la cible ne bloque pas le tir même si le mur est listé en premier', () => {
@@ -65,7 +39,7 @@ test('un mur derrière la cible ne bloque pas le tir même si le mur est listé 
   target.position.z = -4;
   wall.position.z = -6;
 
-  assert.equal(hitsTarget(camera, [wall, target], target), true);
+  assert.equal(castShot(camera, [wall, target]).object, target);
 });
 
 test('une cible invisible est ignorée', () => {
@@ -74,16 +48,19 @@ test('une cible invisible est ignorée', () => {
   target.position.z = -4;
   target.visible = false;
 
-  assert.equal(hitsTarget(camera, [target], target), false);
+  assert.equal(castShot(camera, [target]), null);
 });
 
-test('la grille de repérage ne bloque pas un tir', () => {
+test('le tracé du tir précédent ne bloque pas le suivant', () => {
   const camera = new PerspectiveCamera(75, 1, 0.1, 100);
   const target = new Mesh(new BoxGeometry(1, 1, 1), new MeshBasicMaterial());
-  const grid = new GridHelper(10, 10);
+  const tracer = new Line(
+    new BufferGeometry().setFromPoints([new Vector3(0, 0, -1), new Vector3(0, 0, -2)]),
+    new LineBasicMaterial(),
+  );
   target.position.z = -4;
 
-  assert.equal(hitsTarget(camera, [grid, target], target), true);
+  assert.equal(castShot(camera, [tracer, target]).object, target);
 });
 
 test('le tir suit la rotation de la caméra', () => {
@@ -91,9 +68,9 @@ test('le tir suit la rotation de la caméra', () => {
   const target = new Mesh(new BoxGeometry(1, 1, 1), new MeshBasicMaterial());
   target.position.x = -4;
 
-  assert.equal(hitsTarget(camera, [target], target), false);
+  assert.equal(castShot(camera, [target]), null);
   camera.rotation.y = Math.PI / 2;
-  assert.equal(hitsTarget(camera, [target], target), true);
+  assert.equal(castShot(camera, [target]).object, target);
 });
 
 test('les déplacements de la caméra et de la cible sont pris en compte entre deux rendus', () => {
@@ -101,11 +78,11 @@ test('les déplacements de la caméra et de la cible sont pris en compte entre d
   const target = new Mesh(new BoxGeometry(1, 1, 1), new MeshBasicMaterial());
   target.position.z = -4;
 
-  assert.equal(hitsTarget(camera, [target], target), true);
+  assert.equal(castShot(camera, [target]).object, target);
   camera.position.x = 2;
-  assert.equal(hitsTarget(camera, [target], target), false);
+  assert.equal(castShot(camera, [target]), null);
   target.position.x = 2;
-  assert.equal(hitsTarget(camera, [target], target), true);
+  assert.equal(castShot(camera, [target]).object, target);
 });
 
 test('dans le niveau réel, la cloison bloque le tir mais le passage le laisse passer', () => {
@@ -114,11 +91,11 @@ test('dans le niveau réel, la cloison bloque le tir mais le passage le laisse p
   const camera = new PerspectiveCamera(75, 1, 0.1, 100);
   camera.position.set(0, 1.6, 2);
   target.position.set(0, 0.9, -4.5);
-  assert.equal(hitsTarget(camera, scene.children, target), false);
+  assert.notEqual(castShot(camera, scene.children)?.object, target);
 
   camera.position.x = -3.5;
   target.position.x = -3.5;
-  assert.equal(hitsTarget(camera, scene.children, target), true);
+  assert.equal(castShot(camera, scene.children).object, target);
 });
 
 test('le garde reste touchable à bout portant même au contact de son sprite', () => {
@@ -126,5 +103,5 @@ test('le garde reste touchable à bout portant même au contact de son sprite', 
   const target = scene.children.find(object => object.userData.enemyId);
   const camera = new PerspectiveCamera(75, 1, 0.05, 100);
   camera.position.set(target.position.x, 1.6, target.position.z);
-  assert.equal(hitsTarget(camera, scene.children, target), true);
+  assert.equal(castShot(camera, scene.children).object, target);
 });

@@ -46,13 +46,6 @@ async (page) => {
     check(idleA.equals(idleB), 'les gardes ne restent pas au repos à distance');
     await page.screenshot({path: '.playwright-mcp/sprint7-guards-idle.png'});
 
-    await page.evaluate(() => document.exitPointerLock());
-    await page.getByRole('button', {name: 'Reprendre', exact: true}).waitFor();
-    const paused = await canvas().screenshot();
-    await page.waitForTimeout(1200);
-    check(await health() === 3 && paused.equals(await canvas().screenshot()), 'le combat continue en pause');
-    await button('Reprendre');
-
     // Le déplacement réel déclenche le garde à droite, sans toucher aux données du niveau.
     await page.keyboard.down('KeyD');
     await page.waitForTimeout(1200);

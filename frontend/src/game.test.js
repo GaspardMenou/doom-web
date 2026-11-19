@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {advance, newGame, PLAYER_RADIUS} from './game.js';
-import {ROOM_SIZE} from './level.js';
+import {ROOM_SIZE, WALLS} from './level.js';
 
 test('avancer pendant une seconde déplace le joueur de trois mètres', () => {
   let state = {...newGame(), enemies: []};
@@ -84,6 +84,13 @@ test('le joueur peut longer un mur sans rester bloqué', () => {
 
   assert.equal(next.player.x, ROOM_SIZE / 2 - PLAYER_RADIUS);
   assert.ok(next.player.z < state.player.z);
+});
+
+test('le joueur ne traverse pas le bloc central avec ses commandes', () => {
+  let state = {...newGame(), enemies: []};
+  for (let frame = 0; frame < 60; frame++) state = advance(state, {forward: true}, 0.05);
+  const wall = WALLS[0];
+  assert.ok(state.player.z >= wall.z + wall.depth / 2 + PLAYER_RADIUS - 0.000001);
 });
 
 test('une longue interruption ne téléporte pas le joueur', () => {

@@ -10,30 +10,16 @@ test('un trajet libre vise directement le joueur', () => {
   assert.equal(nextWaypoint(from, to), to);
 });
 
-test('le détour vers le nord commence à droite de la cloison', () => {
-  const from = {x: 0, z: 2};
-  const to = {x: 0, z: -4.5};
-  const next = nextWaypoint(from, to);
-
-  assert.ok(next.x > from.x);
-  assert.ok(canStand(next.x, next.z, 0.5));
-  assert.ok(hasLineOfSight(from, next, 0.5));
-});
-
-test('le détour fonctionne aussi en venant de l’autre côté de la cloison', () => {
-  const from = {x: 0, z: -4.5};
-  const to = {x: 0, z: 2};
-  const next = nextWaypoint(from, to);
-
-  assert.ok(next.x > from.x);
-  assert.ok(canStand(next.x, next.z, 0.5));
-  assert.ok(hasLineOfSight(from, next, 0.5));
-});
-
-test('une destination déjà atteinte ne produit pas de coordonnées invalides', () => {
-  const from = {x: 3.5, z: 2};
-
-  assert.deepEqual(nextWaypoint(from, from), from);
+test('le trajet contourne le bloc central dans les deux sens', () => {
+  for (const [from, to] of [
+    [{x: 0, z: 2}, {x: 0, z: -4.5}],
+    [{x: 0, z: -4.5}, {x: 0, z: 2}],
+  ]) {
+    const next = nextWaypoint(from, to);
+    assert.notDeepEqual(next, from);
+    assert.ok(canStand(next.x, next.z, 0.5));
+    assert.ok(hasLineOfSight(from, next, 0.5));
+  }
 });
 
 test('une destination dans la cloison ne fait pas inventer un passage', () => {

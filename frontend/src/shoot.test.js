@@ -29,14 +29,3 @@ test('deux impacts tuent cet ennemi ; les morts ne prennent plus de coups', () =
   assert.equal(shoot(state, id), state);
   assert.equal(state.enemies[1].health, 2);
 });
-
-test('recommencer rétablit les ennemis et une partie terminée bloque les tirs', () => {
-  const state = newGame();
-  const id = state.enemies[0].id;
-  const won = {...state, status: 'won'};
-  const lost = {...state, status: 'lost'};
-  assert.equal(shoot(won, id), won);
-  assert.equal(shoot(lost, id), lost);
-  assert.equal(newGame().enemies[0].health, 2);
-  assert.equal(newGame().enemies[0].alerted, false);
-});

@@ -33,7 +33,7 @@ L'utilisateur demande l'ambiance du premier Doom, une refonte de toute l'UI, le 
 
 ## Evidence on Hand
 
-README.md distingue l'historique des sprints 1 à 6 du fonctionnement actuel du sprint 7. Les 108 tests Node front, le build et les quatre scénarios navigateur ont été validés localement. Les parcours unitaires de campagne utilisent une visée parfaite ; les scénarios navigateur séparent le vrai trajet du premier niveau et le combat réel des transitions à sorties temporairement élargies. Ils ne constituent pas une campagne complète parcourue à la main dans le navigateur. L'inventaire des six visuels et leurs prompts accompagne ce compte rendu. Les résultats CI restent propres au commit publié.
+README.md distingue l'historique des sprints 1 à 6 du fonctionnement actuel du sprint 7. Après relecture des doublons, les 108 tests Node front sont devenus 90 ; frontend/TESTS.md détaille les suppressions, les cas conservés et leurs vérifications. Le parcours unitaire de campagne utilise une visée parfaite ; les scénarios navigateur séparent le vrai trajet du premier niveau et le combat réel des transitions à sorties temporairement élargies. Ils ne constituent pas une campagne complète parcourue à la main dans le navigateur. L'inventaire des six visuels et leurs prompts accompagne ce compte rendu. Les résultats CI restent propres au commit publié.
 
 ## Product Principles
 

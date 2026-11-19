@@ -7,19 +7,9 @@ test('la cloison bloque le centre, le passage à droite reste libre', () => {
   assert.equal(canStand(3.5, -0.5, 0.25), true);
 });
 
-test('le joueur garde son rayon à l’intérieur des quatre murs extérieurs', () => {
+test('le rayon du joueur lui interdit de dépasser le bord de la pièce', () => {
   assert.equal(canStand(5.75, 2, 0.25), true);
   assert.equal(canStand(5.76, 2, 0.25), false);
-  assert.deepEqual(moveInLevel({x: 5.7, z: 2}, 0.15, 0, 0.25), {x: 5.75, z: 2});
-});
-
-test('marcher contre la cloison ne permet pas de la traverser', () => {
-  let position = {x: 0, z: 2};
-  for (let frame = 0; frame < 60; frame++) {
-    position = moveInLevel(position, 0, -0.15, 0.25);
-    assert.equal(canStand(position.x, position.z, 0.25), true);
-  }
-  assert.ok(position.z >= -0.25);
 });
 
 test('on peut longer la cloison et passer par l’ouverture', () => {

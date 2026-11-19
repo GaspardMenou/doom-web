@@ -3,7 +3,7 @@ set -eu
 cd "$(dirname "$0")/.."
 
 project="doom-web-smoke-$$"
-export FRONTEND_PORT=0
+export FRONTEND_HOST=127.0.0.1 FRONTEND_PORT=0
 compose() { docker compose -p "$project" "$@"; }
 cleanup() {
     result=$?

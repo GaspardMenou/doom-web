@@ -30,5 +30,13 @@ export function createRoom() {
   wall(ROOM_SIZE, 0.2, 0, edge, '#9a8b73');
   wall(0.2, ROOM_SIZE, -edge, 0, '#738c9c');
   wall(0.2, ROOM_SIZE, edge, 0, '#85977a');
+
+  const target = new THREE.Mesh(
+    new THREE.BoxGeometry(1, 1, 1),
+    new THREE.MeshBasicMaterial({color: '#b22f4a'}),
+  );
+  target.name = 'target';
+  target.position.set(0, 1.6, -2);
+  scene.add(target);
   return scene;
 }

@@ -3,7 +3,7 @@ export const PLAYER_RADIUS = 0.25;
 const SPEED = 3;
 
 export function newGame() {
-  return {player: {x: 0, z: 2, angle: 0}};
+  return {player: {x: 0, z: 2, angle: 0}, targetHealth: 2};
 }
 
 export function advance(previous, input, seconds) {
@@ -26,4 +26,8 @@ export function advance(previous, input, seconds) {
       z: Math.max(-limit, Math.min(limit, z)),
     },
   };
+}
+
+export function shoot(previous, hit) {
+  return {...previous, targetHealth: Math.max(0, previous.targetHealth - (hit ? 1 : 0))};
 }

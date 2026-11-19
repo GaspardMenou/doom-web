@@ -46,18 +46,24 @@ function App() {
   const playing = state.status === 'playing';
   const unavailable = state.status === 'unavailable';
   return <main>
-    <p className="eyebrow">DOOM WEB · SPRINT 1</p>
-    <h1>Une pièce. Quatre murs.</h1>
-    <p id="commands">ZQSD, WASD ou les flèches pour marcher. Souris pour regarder. Échap pour libérer la souris et mettre en pause.</p>
+    <h1>Sprint 2 : tir sur cible.</h1>
+    <p id="commands">ZQSD, WASD ou les flèches pour marcher. Souris pour viser. Clic gauche ou Espace pour tirer. Échap pour mettre en pause.</p>
     <div className="game-layout"><section aria-label="Le jeu">
-      <canvas ref={canvas} width="640" height="400" tabIndex="0" aria-label="Pièce en vue à la première personne. Cliquez pour entrer." aria-describedby="commands" />
+      <div className="viewport">
+        <canvas ref={canvas} width="640" height="400" tabIndex="0" aria-label="Pièce en vue à la première personne. Cliquez pour entrer." aria-describedby="commands" />
+        <svg className="crosshair" viewBox="0 0 20 20" aria-hidden="true">
+          <path d="M10 2v16M2 10h16" stroke="#102b29" strokeWidth="4" />
+          <path d="M10 2v16M2 10h16" stroke="white" strokeWidth="2" />
+        </svg>
+      </div>
       <div className="controls">
         <button disabled={playing || unavailable} onClick={() => game.current?.resume()}>Entrer dans la pièce</button>
         <button disabled={!playing} onClick={() => game.current.pause()}>Pause</button>
-        <button disabled={unavailable} onClick={() => game.current.restart()}>Revenir au centre</button>
+        <button disabled={unavailable} onClick={() => game.current.restart()}>Recommencer</button>
       </div>
-      <p className="hint">Explorez la pièce : les murs bloquent vos déplacements. Cliquez dans le jeu ou sur Entrer pour capturer la souris.</p>
+      <p className="hint">Visez le cube rouge : deux impacts le détruisent. Un clic d’entrée capture la souris ; les clics suivants tirent. Munitions illimitées.</p>
       <p role="status">{playing ? 'Exploration en cours.' : unavailable ? 'Affichage 3D indisponible.' : 'En pause — entrez dans la pièce pour explorer.'}</p>
+      {!unavailable && <p role="status">{state.targetHealth === 0 ? 'Cible détruite ! Recommencez pour réessayer.' : `Cible : ${state.targetHealth ?? '…'} PV.`} {state.lastShot}</p>}
       {state.error && <p role="alert" className="error">{state.error}</p>}
     </section><aside>
       <div className="list-heading"><h2>Top 10</h2><button className="secondary" disabled={loading} onClick={() => loadScores()}>Recharger</button></div>

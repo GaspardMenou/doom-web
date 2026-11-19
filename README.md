@@ -1,6 +1,6 @@
 # Doom Web
 
-Projet de FPS rétro inspiré du premier Doom : React pour l'interface, Three.js dans un Canvas pour le jeu, FastAPI + SQLAlchemy pour les scores. Le sprint 1 affiche une pièce 3D dans laquelle on peut marcher et regarder à la souris, sans traverser les murs.
+Projet de FPS rétro inspiré du premier Doom : React pour l'interface, Three.js dans un Canvas pour le jeu, FastAPI + SQLAlchemy pour les scores. Les deux premiers sprints permettent de marcher dans une pièce 3D et de tirer sur une cible d'entraînement.
 
 ## Première version convenue
 
@@ -18,7 +18,7 @@ Le backend sait lire un classement vide. **L'enregistrement n'est pas encore imp
 
 Dans `backend/` : `uv sync --locked`, `uv run pytest -q` (1 passed), puis `uv run uvicorn scores:create_app --factory --reload --port 8001`.
 
-Dans `frontend/` : `npm ci`, `npm test` (17 tests), puis `npm run dev`. Ouvrir `http://127.0.0.1:5175`. Chaque terminal reste dans son dossier.
+Dans `frontend/` : `npm ci`, `npm test` (30 tests), puis `npm run dev`. Ouvrir `http://127.0.0.1:5175`. Chaque terminal reste dans son dossier.
 
 ## Sprint 1 : comprendre dans l'ordre
 
@@ -37,7 +37,23 @@ node --test --test-name-pattern='avancer pendant' src/game.test.js
 
 Les tests ont été écrits en échec avant les règles correspondantes. Ils remplacent ceux de l'ancien jeu 2D ; les tests du client API sont conservés. Pour essayer : cliquer sur **Entrer dans la pièce**, marcher avec ZQSD/WASD ou les flèches, regarder avec la souris, puis appuyer sur Échap pour mettre en pause. **Revenir au centre** réinitialise la position et le regard.
 
-Vérification du sprint : les 17 tests et le build passent, la pièce WebGL s'affiche. La capture réelle de la souris reste à essayer dans un navigateur ouvert normalement : l'automatisation Chromium sur ce Mac renvoie `WrongDocumentError` lors de `requestPointerLock` ([problème documenté côté Playwright](https://github.com/microsoft/playwright/issues/20956)). Le jeu affiche une erreur et permet de réessayer ; les tests de déplacement et de clavier ne simulent pas une capture réussie.
+Vérification du sprint : les 17 tests et le build passent, la pièce WebGL s'affiche. L'utilisateur a confirmé dans son navigateur que la souris contrôle le regard et que ZQSD permet de marcher. Cette validation est manuelle ; les tests automatisés couvrent les règles de déplacement, les collisions et les entrées clavier.
+
+## Sprint 2 : tirer sur une cible
+
+- Entrer dans la pièce, viser le cube rouge au centre de l'écran, puis tirer au clic gauche ou avec Espace. Un appui donne un tir, sans limite de munitions. Le clic d'entrée capture seulement la souris.
+- La cible commence avec 2 points de vie : elle devient orange après un impact, puis disparaît au second. Un tir manqué ne lui enlève pas de vie ; les murs arrêtent les tirs.
+- Échap et Pause bloquent les tirs. Recommencer restaure la position, le regard et la cible rouge à 2 points de vie. La cible d'entraînement reste traversable.
+
+Pour comprendre, commencer par `frontend/src/shoot.test.js` : `shoot(newGame(), true)` doit laisser un seul point de vie, sans modifier l'état précédent. La fonction `shoot()` de `game.js` ne fait que mettre à jour cette vie.
+
+`frontend/src/shooting.test.js` teste ensuite la visée avec de vraies géométries Three.js, sans navigateur. `hitsTarget()` dans `shooting.js` lance un rayon depuis le centre de la caméra et prend uniquement le premier impact visible : un mur situé avant la cible bloque le tir. `canvas.js` relie ce résultat aux clics, aux dégâts et à l'affichage.
+
+```sh
+node --test src/shoot.test.js
+```
+
+Les tests de dégâts et de visée ont été lancés en échec avant leur implémentation. Vérification du sprint : 30 tests au vert et build validé ; contrôle navigateur du clic d'entrée, des dégâts, de la destruction, du reset, des tirs manqués et de la pause. Pour ce contrôle automatisé, seule la capture native de la souris est simulée ; la scène Three.js, les tirs et les règles de jeu sont réels. Les commandes souris/clavier natives avaient été confirmées par l'utilisateur au sprint 1.
 
 ## Premier trajet complet
 

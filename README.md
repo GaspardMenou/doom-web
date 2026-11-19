@@ -2,7 +2,7 @@
 
 Projet de FPS rétro inspiré du premier Doom : React pour l'interface, Three.js dans un Canvas pour le jeu, FastAPI + SQLAlchemy pour les scores. Le sprint 7 propose une campagne de trois plans distincts, avec plusieurs gardes qui détectent le joueur, le poursuivent et s'animent. Les PV sont conservés entre les niveaux ; le résultat peut être enregistré après la dernière sortie ou une défaite.
 
-Le développement de l'API reste à la charge de l'utilisateur. Le front utilise les routes de score et attend aussi `GET /players/` pour les statistiques par pseudo ; le contrat est décrit dans `frontend/API_CONTRACT.md`.
+L'utilisateur a implémenté l'API des joueurs et de leurs statistiques. Le front utilise les routes de score et `GET /players/` pour afficher les résultats par pseudo ; le contrat est décrit dans `frontend/API_CONTRACT.md`.
 
 ## Première version convenue
 
@@ -19,7 +19,7 @@ Le backend fourni savait lire un classement vide. Le sprint 5 ajoute l'enregistr
 
 ## Lancer
 
-Dans `backend/` : `uv sync --locked`, `uv run pytest -q` (21 tests), puis `uv run uvicorn scores:create_app --factory --reload --port 8001`.
+Dans `backend/` : `uv sync --locked`, `uv run pytest -q` (22 tests), puis `uv run uvicorn scores:create_app --factory --reload --port 8001`.
 
 Dans `frontend/` : `npm ci`, `npm test` (90 tests après suppression des doublons), puis `npm run dev`. Ouvrir `http://127.0.0.1:5175`. Chaque terminal reste dans son dossier. L'[inventaire des tests](frontend/TESTS.md) explique leur rôle et les simplifications effectuées.
 
@@ -200,6 +200,10 @@ Les scénarios navigateur se lancent séparément avec `browser_run_code_unsafe`
 
 La capture native de souris est simulée dans les scénarios de jeu. Les vérifications navigateur sont distinctes de `npm test`, et les scénarios de campagne et de gardes bloquent les POST de scores. Les résultats de la CI correspondent au commit publié et restent à consulter séparément.
 
+L'API des joueurs a ensuite été réalisée par l'utilisateur, par petites étapes : un pseudo unique identifie un `Player`, et chaque `Score` lui est associé par `player_id`. À chaque score, le backend crée ou réutilise le joueur puis actualise ses statistiques dans la même transaction. `ScoreRead` extrait le pseudo avec `AliasPath("player", "player")` : le front reçoit toujours `player` en texte, ainsi que le nouvel identifiant `player_id`.
+
+Le test backend `test_second_score_updates_player_stats` envoie 80 puis 90 points pour Ada : un seul joueur est conservé, avec 170 points, 2 parties et une moyenne de 85. La suite backend compte désormais 22 tests. Les deux tables et leurs données sont stockées dans le même fichier SQLite.
+
 Les six visuels raster livrés ont leurs prompts exacts et leur provenance à côté des images :
 
 | Usage | Image | Prompt et provenance |
@@ -211,7 +215,7 @@ Les six visuels raster livrés ont leurs prompts exacts et leur provenance à c�
 | Murs de Maintenance | [maintenance.webp](frontend/public/art/walls/maintenance.webp) | [Provenance](frontend/public/art/walls/maintenance.provenance.json) |
 | Murs du Réacteur | [reactor.webp](frontend/public/art/walls/reactor.webp) | [Provenance](frontend/public/art/walls/reactor.provenance.json) |
 
-Limites actuelles : les gardes n'ont pas de collisions entre eux ni avec le joueur ; les sprites sont des billboards à quatre poses, pas des personnages 3D. Le trajet utilise une grille d'un mètre. Les tirs restent instantanés, le score est déclaré par le client, et le frontend de statistiques dépend du contrat réellement servi par l'API développée par l'utilisateur.
+Limites actuelles : les gardes n'ont pas de collisions entre eux ni avec le joueur ; les sprites sont des billboards à quatre poses, pas des personnages 3D. Le trajet utilise une grille d'un mètre. Les tirs restent instantanés et le score est déclaré par le client.
 
 ## Premier trajet complet
 
@@ -233,7 +237,7 @@ Le dossier `game-reference` montre un résultat complet. Vous pouvez le lire, ma
 
 ## Images Docker et CI
 
-La CI GitHub Actions lance les tests front et back, construit les deux images Linux AMD64, puis vérifie ensemble le front, le proxy `/api`, un POST de score suivi d'un GET, le rejet d'un score invalide, les redirections HTTPS et la persistance du résultat après recréation des conteneurs. Elle publie les images sur GHCR seulement si ces étapes passent, lors d'un push sur `main` ou d'un tag `v*`. Les pull requests vérifient les images sans les publier.
+La CI GitHub Actions lance les tests front et back, construit les deux images Linux AMD64, puis vérifie ensemble le front, le proxy `/api`, un POST de score suivi d'un GET, les statistiques du joueur associé, le rejet d'un score invalide, les redirections HTTPS et la persistance du score et des statistiques après recréation des conteneurs. Elle publie les images sur GHCR seulement si ces étapes passent, lors d'un push sur `main` ou d'un tag `v*`. Les pull requests vérifient les images sans les publier.
 
 - `ghcr.io/gaspardmenou/doom-web-frontend:latest`
 - `ghcr.io/gaspardmenou/doom-web-backend:latest`
@@ -286,7 +290,7 @@ Pour mettre à jour, répéter `docker compose pull` puis `docker compose up -d 
 
 Exécuter les commandes depuis le dossier du même `compose.yaml` et avec le même `.env` que le déploiement, après connexion à GHCR.
 
-La base SQLite et la table `score` sont créées automatiquement au démarrage du backend par `create_app()`. Pour les initialiser, démarrer le backend suffit :
+Sur une base neuve, le fichier SQLite et les tables `player` et `score` sont créés automatiquement au démarrage du backend par `create_app()`. Pour les initialiser, démarrer le backend suffit :
 
 ```sh
 docker compose pull backend
@@ -301,6 +305,8 @@ docker compose run --rm --no-deps backend /app/.venv/bin/python -c \
 ```
 
 `--rm` supprime le conteneur temporaire après la commande ; le volume de base de données est conservé. Une nouvelle exécution conserve les scores existants. Le fichier se trouve dans `/app/instance/scores.sqlite`, stocké dans le volume `doom-web_scores` avec le nom de projet par défaut. Cette initialisation crée les tables manquantes ; elle ne modifie pas le schéma des tables existantes.
+
+Une base de l'ancienne version, où `score.player` était du texte, doit être migrée pour conserver les données, ou réinitialisée si leur perte est explicitement acceptée. Aucun reset n'est automatique. Supprimer le dossier local `backend/instance` ne vide pas le volume SQLite d'un serveur Docker : ce sont deux stockages distincts.
 
 Une fois le backend démarré, vérifier son état et lire le classement :
 

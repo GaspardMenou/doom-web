@@ -16,7 +16,7 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 
 compose up -d --wait --wait-timeout 60 --no-build --pull never
-saved_score=$(python3 - "http://$(compose port frontend 8080)" <<'PY'
+saved_state=$(python3 - "http://$(compose port frontend 8080)" <<'PY'
 import json
 import re
 import sys
@@ -40,8 +40,9 @@ request = Request(base + '/api/scores/', data=json.dumps({
 with urlopen(request, timeout=10) as response:
     assert response.status == 201
     saved = json.load(response)
-assert set(saved) == {'id', 'player', 'points', 'created_at'}
+assert set(saved) == {'id', 'player', 'player_id', 'points', 'created_at'}
 assert type(saved['id']) is int and saved['id'] > 0
+assert type(saved['player_id']) is int and saved['player_id'] > 0
 assert saved['player'] == 'Docker smoke' and saved['points'] == 42
 assert datetime.fromisoformat(saved['created_at']).tzinfo is not None
 try:
@@ -53,6 +54,15 @@ except HTTPError as error:
     assert error.code == 422
 with urlopen(base + '/api/scores/', timeout=10) as response:
     assert json.load(response) == [saved], "Le score valide manque ou le score invalide a été enregistré"
+with urlopen(base + '/api/players/', timeout=10) as response:
+    players = json.load(response)
+assert players == [{
+    'id': saved['player_id'],
+    'player': 'Docker smoke',
+    'total_points': 42,
+    'games_played': 1,
+    'average_points': 42.0,
+}], "Le joueur associé au score ou ses statistiques sont incorrects"
 try:
     urlopen(base + '/api/absent', timeout=10)
     raise AssertionError("Une route API inexistante doit renvoyer 404")
@@ -73,7 +83,7 @@ try:
 except HTTPError as error:
     assert error.code == 307
     assert error.headers['Location'] == 'https://game.example.test/api/scores/'
-print(json.dumps(saved))
+print(json.dumps({'score': saved, 'players': players}))
 PY
 )
 
@@ -86,13 +96,18 @@ PY
 # Recreate containers while retaining this test's isolated database volume.
 compose down
 compose up -d --wait --wait-timeout 60 --no-build --pull never
-python3 - "http://$(compose port frontend 8080)/api/scores/" "$saved_score" <<'PY'
+python3 - "http://$(compose port frontend 8080)" "$saved_state" <<'PY'
 import json
 import sys
 from urllib.request import urlopen
 
-with urlopen(sys.argv[1], timeout=10) as response:
+base = sys.argv[1]
+saved = json.loads(sys.argv[2])
+with urlopen(base + '/api/scores/', timeout=10) as response:
     rows = json.load(response)
-assert rows == [json.loads(sys.argv[2])], "Le score HTTP n’a pas survécu à la recréation des conteneurs"
-print('Containers OK: React, score POST/GET, validation, HTTPS redirects and persistent SQLite.')
+assert rows == [saved['score']], "Le score HTTP n’a pas survécu à la recréation des conteneurs"
+with urlopen(base + '/api/players/', timeout=10) as response:
+    players = json.load(response)
+assert players == saved['players'], "Le joueur ou ses statistiques n’ont pas survécu à la recréation des conteneurs"
+print('Containers OK: React, scores, player statistics, validation, HTTPS redirects and persistent SQLite.')
 PY

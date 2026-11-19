@@ -92,5 +92,5 @@ test('une longue interruption ne téléporte pas le joueur', () => {
 
 test('sans commande, le joueur reste immobile', () => {
   const state = newGame();
-  assert.deepEqual(advance(state, {}, 0.05), state);
+  assert.deepEqual(advance(state, {}, 0.05).player, state.player);
 });

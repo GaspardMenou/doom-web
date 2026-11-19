@@ -17,6 +17,7 @@ button.secondary { background: transparent; color: #24463b; padding: 8px 12px; f
 :focus-visible { outline: 3px solid #b22f4a; outline-offset: 3px; }
 .viewport { position: relative; }
 .crosshair { position: absolute; top: 50%; left: 50%; width: 20px; height: 20px; transform: translate(-50%, -50%); pointer-events: none; }
+progress { accent-color: #24463b; vertical-align: middle; }
 .list-heading { display: flex; justify-content: space-between; align-items: center; margin-top: 32px; }
 h2 { font-size: 20px; }
 h2 span { font-size: 14px; font-weight: normal; margin-left: 8px; }

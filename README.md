@@ -1,6 +1,6 @@
 # Doom Web
 
-Projet de FPS rétro inspiré du premier Doom : React pour l'interface, Three.js dans un Canvas pour le jeu, FastAPI + SQLAlchemy pour les scores. Les deux premiers sprints permettent de marcher dans une pièce 3D et de tirer sur une cible d'entraînement.
+Projet de FPS rétro inspiré du premier Doom : React pour l'interface, Three.js dans un Canvas pour le jeu, FastAPI + SQLAlchemy pour les scores. Les trois premiers sprints permettent de marcher dans une pièce 3D, tirer et affronter un ennemi qui poursuit et attaque le joueur.
 
 ## Première version convenue
 
@@ -18,7 +18,7 @@ Le backend sait lire un classement vide. **L'enregistrement n'est pas encore imp
 
 Dans `backend/` : `uv sync --locked`, `uv run pytest -q` (1 passed), puis `uv run uvicorn scores:create_app --factory --reload --port 8001`.
 
-Dans `frontend/` : `npm ci`, `npm test` (30 tests), puis `npm run dev`. Ouvrir `http://127.0.0.1:5175`. Chaque terminal reste dans son dossier.
+Dans `frontend/` : `npm ci`, `npm test` (47 tests), puis `npm run dev`. Ouvrir `http://127.0.0.1:5175`. Chaque terminal reste dans son dossier.
 
 ## Sprint 1 : comprendre dans l'ordre
 
@@ -54,6 +54,27 @@ node --test src/shoot.test.js
 ```
 
 Les tests de dégâts et de visée ont été lancés en échec avant leur implémentation. Vérification du sprint : 30 tests au vert et build validé ; contrôle navigateur du clic d'entrée, des dégâts, de la destruction, du reset, des tirs manqués et de la pause. Pour ce contrôle automatisé, seule la capture native de la souris est simulée ; la scène Three.js, les tirs et les règles de jeu sont réels. Les commandes souris/clavier natives avaient été confirmées par l'utilisateur au sprint 1.
+
+## Sprint 3 : poursuite, attaques et défaite
+
+Le cube rouge du sprint 2 devient l'ennemi. On garde ses 2 PV et les fonctions de tir déjà testées ; `targetHealth` désigne toujours sa vie. Le joueur commence avec 3 PV, affichés avec une barre de vie.
+
+- L'ennemi poursuit le joueur à 1 mètre par seconde et s'arrête à 1 mètre de lui.
+- À portée, il retire 1 PV, puis attend une seconde avant la prochaine attaque. S'éloigner permet d'éviter ses coups ; Pause fige aussi le combat.
+- À 0 PV, le joueur perd : la souris est libérée, « Défaite » reste affiché et les déplacements, les tirs et la reprise sont bloqués.
+- Deux impacts tuent l'ennemi : il disparaît, cesse de poursuivre et d'attaquer. Le joueur peut continuer à explorer ; la sortie et la victoire viendront au sprint 4.
+- Recommencer restaure les positions, le regard, les vies et le délai d'attaque.
+
+Pour comprendre, lire `frontend/src/enemy.test.js` dans l'ordre : poursuite, arrêt à portée, attaque, délai entre les coups, puis défaite. `advanceEnemy()` dans `enemy.js` contient ces règles sans Three.js. `game.js` l'appelle après le mouvement du joueur ; `combat.test.js` vérifie ce raccordement, le blocage après défaite et le reset.
+
+```sh
+node --test src/enemy.test.js
+node --test src/combat.test.js
+```
+
+Les tests ont été observés en échec avant l'implémentation, puis les 47 tests et le build sont passés au vert. Le contrôle navigateur couvre la poursuite visible, la pause, les trois attaques jusqu'à la défaite, le blocage après défaite, le reset complet et l'arrêt des dégâts après la mort de l'ennemi. Seule la capture native de la souris est simulée pendant ce contrôle automatisé. L'utilisateur a également confirmé dans son navigateur que le combat, la défaite, le redémarrage et les deux tirs pour tuer l'ennemi fonctionnent.
+
+Pour ce sprint, la poursuite est directe et le contact n'est pas solide : le joueur peut traverser le cube. Des obstacles intérieurs demanderont d'adapter les collisions et le trajet de l'ennemi.
 
 ## Premier trajet complet
 

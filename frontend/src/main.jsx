@@ -2,6 +2,7 @@ import React, {useEffect, useRef, useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import {mountGame} from './canvas.js';
 import {createApi} from './api.js';
+import {PLAYER_MAX_HEALTH} from './game.js';
 import './style.css';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8001';
@@ -44,9 +45,11 @@ function App() {
   }, []);
 
   const playing = state.status === 'playing';
+  const lost = state.status === 'lost';
   const unavailable = state.status === 'unavailable';
+  const playerHealth = state.playerHealth ?? PLAYER_MAX_HEALTH;
   return <main>
-    <h1>Sprint 2 : tir sur cible.</h1>
+    <h1>Sprint 3 : poursuite et combat.</h1>
     <p id="commands">ZQSD, WASD ou les flèches pour marcher. Souris pour viser. Clic gauche ou Espace pour tirer. Échap pour mettre en pause.</p>
     <div className="game-layout"><section aria-label="Le jeu">
       <div className="viewport">
@@ -57,13 +60,14 @@ function App() {
         </svg>
       </div>
       <div className="controls">
-        <button disabled={playing || unavailable} onClick={() => game.current?.resume()}>Entrer dans la pièce</button>
+        <button disabled={playing || lost || unavailable} onClick={() => game.current?.resume()}>Entrer dans la pièce</button>
         <button disabled={!playing} onClick={() => game.current.pause()}>Pause</button>
         <button disabled={unavailable} onClick={() => game.current.restart()}>Recommencer</button>
       </div>
-      <p className="hint">Visez le cube rouge : deux impacts le détruisent. Un clic d’entrée capture la souris ; les clics suivants tirent. Munitions illimitées.</p>
-      <p role="status">{playing ? 'Exploration en cours.' : unavailable ? 'Affichage 3D indisponible.' : 'En pause — entrez dans la pièce pour explorer.'}</p>
-      {!unavailable && <p role="status">{state.targetHealth === 0 ? 'Cible détruite ! Recommencez pour réessayer.' : `Cible : ${state.targetHealth ?? '…'} PV.`} {state.lastShot}</p>}
+      <p className="hint">Le cube rouge vous poursuit. À 1 m ou moins, il inflige 1 dégât par seconde. Deux impacts le vainquent. Munitions illimitées.</p>
+      {!unavailable && <p><label htmlFor="player-health">Vie : {playerHealth} / {PLAYER_MAX_HEALTH}</label> <progress id="player-health" value={playerHealth} max={PLAYER_MAX_HEALTH} /></p>}
+      <p role="status">{lost ? 'Défaite — vous n’avez plus de vie. Cliquez sur Recommencer.' : playing ? 'Partie en cours.' : unavailable ? 'Affichage 3D indisponible.' : 'En pause — entrez dans la pièce pour reprendre.'}</p>
+      {!unavailable && <p role="status">{state.targetHealth === 0 ? 'Ennemi vaincu !' : `Ennemi : ${state.targetHealth ?? '…'} PV.`} {state.lastShot}</p>}
       {state.error && <p role="alert" className="error">{state.error}</p>}
     </section><aside>
       <div className="list-heading"><h2>Top 10</h2><button className="secondary" disabled={loading} onClick={() => loadScores()}>Recharger</button></div>

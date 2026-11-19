@@ -31,9 +31,10 @@ Lors d'un POST de score, le backend retrouve le joueur par son pseudo ou le cré
 ## Scores déjà utilisés
 
 - GET `/scores/` : tableau du Top 10 avec `id`, `player`, `player_id`, `points`, `created_at`. `player` reste le pseudo en texte ; `player_id` désigne le joueur associé au score.
-- POST `/scores/` : corps `{ "player": "Ada", "points": 90 }`, réponse 201 avec le score enregistré.
-- Les points restent entre 0 et 90. Une défaite vaut 0 ; la victoire finale des trois niveaux vaut 60 + 10 par PV restant.
-- Aucun score n'est envoyé lors d'une sortie intermédiaire. Les PV sont conservés entre les niveaux ; Rejouer et Jouer repartent du premier niveau.
+- POST `/scores/` : corps `{ "player": "Ada", "points": 3450 }`, réponse 201 avec le score enregistré.
+- Les points sont des entiers de 0 à 100000. Les éliminations rapportent leurs points même en cas de défaite ; chaque secteur franchi ajoute 500 points, et la victoire finale ajoute 1000 + 100 par PV restant.
+- Aucun score n'est envoyé lors d'une sortie intermédiaire. Les PV et les points de combat sont conservés entre les niveaux ; Rejouer et Jouer repartent du premier niveau avec une nouvelle campagne.
+- La graine des placements, les types d'ennemis et les soins restent des données de jeu côté frontend ; le POST envoie toujours uniquement `player` et `points`.
 
 En développement, `VITE_API_URL` utilise `http://localhost:8001` par défaut. Dans les images Docker, les requêtes passent par `/api` sur le même domaine. Les chemins ci-dessus sont relatifs à cette base.
 
@@ -41,4 +42,4 @@ En développement, `VITE_API_URL` utilise `http://localhost:8001` par défaut. D
 
 Depuis `frontend/`, `node --test src/playerStats.test.js` vérifie la forme de réponse. Le scénario `frontend/tests/player-stats.playwright.js` utilise uniquement des réponses interceptées dans le navigateur de test : elles ne sont ni écrites dans SQLite ni livrées comme données de production.
 
-Depuis `backend/`, `uv run pytest -q tests/test_scores.py::test_second_score_updates_player_stats` vérifie que deux scores pour le même pseudo donnent un seul joueur et les statistiques cumulées. La suite backend compte 22 tests.
+Depuis `backend/`, `uv run pytest -q tests/test_scores.py::test_second_score_updates_player_stats` vérifie que deux scores pour le même pseudo donnent un seul joueur et les statistiques cumulées. Les 22 tests backend passent, y compris la borne de 100000 points. Les scénarios navigateur de jeu bloquent les POST de scores pour préserver les données existantes ; leur score affiché ne constitue donc pas une preuve d'enregistrement en base.

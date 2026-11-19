@@ -1,14 +1,14 @@
 # Doom Web
 
-Projet de FPS rétro inspiré du premier Doom : React pour l'interface, Three.js dans un Canvas pour le jeu, FastAPI + SQLAlchemy pour les scores. Le sprint 7 propose une campagne de trois plans distincts, avec plusieurs gardes qui détectent le joueur, le poursuivent et s'animent. Les PV sont conservés entre les niveaux ; le résultat peut être enregistré après la dernière sortie ou une défaite.
+Projet de FPS rétro inspiré du premier Doom : React pour l'interface, Three.js dans un Canvas pour le jeu, FastAPI + SQLAlchemy pour les scores. Le sprint 8 propose trois secteurs de 64, 80 et 96 mètres de côté, des déplacements rapides, quatre types d'ennemis et des rencontres dont le placement varie à chaque nouvelle campagne. Les PV sont conservés entre les niveaux ; le résultat peut être enregistré après la dernière sortie ou une défaite.
 
 L'utilisateur a implémenté l'API des joueurs et de leurs statistiques. Le front utilise les routes de score et `GET /players/` pour afficher les résultats par pseudo ; le contrat est décrit dans `frontend/API_CONTRACT.md`.
 
 ## Première version convenue
 
-- Solo sur ordinateur : traverser trois secteurs de 12, 14 puis 16 mètres et atteindre leurs sorties.
-- Une arme, munitions illimitées, 3 PV pour la campagne et trois, quatre puis cinq gardes de 2 PV.
-- Accueil, commandes, pause, passage au niveau suivant, victoire/défaite, nouvelle campagne et classement.
+- Solo sur ordinateur : explorer trois secteurs de 64, 80 puis 96 mètres et atteindre leurs sas d'extraction.
+- Une arme, munitions illimitées, 3 PV maximum, des soins et 12, 18 puis 24 ennemis mêlant gardes, traqueurs, colosses et sentinelles.
+- Marche à 8 m/s, course à 12 m/s avec Maj, plan en jeu avec M ; accueil, pause, niveaux suivants, victoire/défaite et classement.
 - Statistiques par pseudo affichées à partir de la réponse réelle de l'API ; aucune donnée de démonstration injectée dans l'application.
 - Développement en TDD et petits sprints. Pour chaque comportement : test en échec, code minimal, tests au vert, nettoyage et vérification dans le navigateur.
 - Rendu prévu le 20 novembre 2026 après-midi.
@@ -21,9 +21,9 @@ Le backend fourni savait lire un classement vide. Le sprint 5 ajoute l'enregistr
 
 Dans `backend/` : `uv sync --locked`, `uv run pytest -q` (22 tests), puis `uv run uvicorn scores:create_app --factory --reload --port 8001`.
 
-Dans `frontend/` : `npm ci`, `npm test` (90 tests après suppression des doublons), puis `npm run dev`. Ouvrir `http://127.0.0.1:5175`. Chaque terminal reste dans son dossier. L'[inventaire des tests](frontend/TESTS.md) explique leur rôle et les simplifications effectuées.
+Dans `frontend/` : `npm ci`, `npm test`, puis `npm run dev`. Ouvrir `http://127.0.0.1:5175`. Chaque terminal reste dans son dossier. L'[inventaire des tests](frontend/TESTS.md) explique leur rôle et les simplifications effectuées.
 
-Les sections des sprints 1 à 6 ci-dessous conservent l'historique pédagogique et les validations de chaque étape. La pièce de 10 m, le cube unique, `targetHealth` et `shoot(state, true)` appartiennent à ces anciennes versions. Les tests ont depuis été adaptés ; pour comprendre le fonctionnement actuel, commencer par le sprint 7.
+Les sections des sprints 1 à 7 ci-dessous conservent l'historique pédagogique et les validations de chaque étape. La pièce de 10 m, le cube unique, `targetHealth` et `shoot(state, true)` appartiennent à ces anciennes versions. Les tests ont depuis été adaptés ; pour comprendre le fonctionnement actuel, commencer par le sprint 8.
 
 ## Sprint 1 : comprendre dans l'ordre (historique)
 
@@ -156,7 +156,7 @@ L'utilisateur a confirmé dans son navigateur que le plein écran natif, les tir
 
 Deux illustrations originales ont été générées avec l'outil natif imagegen : `public/art/sector-entry.webp` pour l'accueil et `public/art/pistol-view.png` pour l'arme. Leurs prompts exacts et provenances sont conservés à côté des images ; aucun asset original de Doom n'est utilisé. À cette étape, les textures du niveau étaient produites par le code et l'ennemi restait cubique. Le sprint 7 remplace les murs par des images et le cube par des gardes animés ; les tirs restent instantanés avec un effet visuel, sur ordinateur avec clavier et souris.
 
-## Sprint 7 : trois secteurs, plusieurs gardes et statistiques par pseudo
+## Sprint 7 : trois secteurs, plusieurs gardes et statistiques par pseudo (historique)
 
 Chaque secteur possède ses propres coordonnées, gardes et image de mur. Le plan de l'accueil utilise ces données : il dessine les murs, les gardes, le départ et la sortie, sans tracer une route artificielle.
 
@@ -204,7 +204,7 @@ L'API des joueurs a ensuite été réalisée par l'utilisateur, par petites éta
 
 Le test backend `test_second_score_updates_player_stats` envoie 80 puis 90 points pour Ada : un seul joueur est conservé, avec 170 points, 2 parties et une moyenne de 85. La suite backend compte désormais 22 tests. Les deux tables et leurs données sont stockées dans le même fichier SQLite.
 
-Les six visuels raster livrés ont leurs prompts exacts et leur provenance à côté des images :
+Les six visuels raster livrés au sprint 7 ont leurs prompts exacts et leur provenance à côté des images :
 
 | Usage | Image | Prompt et provenance |
 | --- | --- | --- |
@@ -215,7 +215,72 @@ Les six visuels raster livrés ont leurs prompts exacts et leur provenance à c�
 | Murs de Maintenance | [maintenance.webp](frontend/public/art/walls/maintenance.webp) | [Provenance](frontend/public/art/walls/maintenance.provenance.json) |
 | Murs du Réacteur | [reactor.webp](frontend/public/art/walls/reactor.webp) | [Provenance](frontend/public/art/walls/reactor.provenance.json) |
 
-Limites actuelles : les gardes n'ont pas de collisions entre eux ni avec le joueur ; les sprites sont des billboards à quatre poses, pas des personnages 3D. Le trajet utilise une grille d'un mètre. Les tirs restent instantanés et le score est déclaré par le client.
+Limites au sprint 7 : les gardes n'avaient pas de collisions entre eux ni avec le joueur ; les sprites sont des billboards à quatre poses, pas des personnages 3D. Le trajet utilise une grille d'un mètre. Les tirs restent instantanés et le score est déclaré par le client.
+
+## Sprint 8 : grands secteurs, course, rencontres variables et sas d'extraction
+
+Les plans ne sont plus de petites salles agrandies : ils proposent de longues traversées, des bâtiments visitables, des allées, des boucles et plusieurs itinéraires vers la sortie.
+
+| Secteur | Taille | Organisation | Ennemis | Soins |
+| --- | --- | --- | ---: | ---: |
+| Entrée | 64 × 64 m | Cour, dépôt ouest et entrepôt est à plusieurs accès | 12 | 4 |
+| Maintenance | 80 × 80 m | Six grandes salles à quatre portes et des allées reliées | 18 | 6 |
+| Réacteur | 96 × 96 m | Noyau central, anneaux de couvertures et piliers | 24 | 8 |
+
+Le joueur marche à **8 m/s** et court à **12 m/s avec Maj**. La diagonale conserve la même vitesse. Les déplacements sont découpés en petits pas pour éviter de traverser une cloison fine ou un ennemi ; les acteurs vivants font obstacle. **M** permet de consulter le plan pendant la partie. Maintenir le clic gauche ou Espace tire toutes les 130 ms, sans limite de munitions. L'objectif est un sas d'extraction lumineux, avec une zone d'arrivée de 3 × 3 m.
+
+Les placements des ennemis et des soins varient dans les zones du plan, jusqu'à 5 m autour des points prévus. Une graine entière conserve cet aléatoire : `newGame(0, 12345)` redonne les mêmes placements, et cette graine suit la campagne entre les niveaux. Dans le navigateur, `http://127.0.0.1:5175/?seed=12345` fixe la mission ; son numéro est affiché en pause. **Rejouer** et **Recommencer** gardent la graine, tandis que **Jouer** renouvelle la mission sauf si l'URL impose une graine. Les essais de placement refusent les murs et préservent une arrivée calme ; si aucun essai n'est valide, le point prévu dans le plan est conservé. Les murs et les routes principales sont écrits dans les fichiers de niveau, ce qui garde les secteurs reconnaissables.
+
+| Type | PV | Vitesse | Comportement | Points |
+| --- | ---: | ---: | --- | ---: |
+| Garde | 2 | 2,2 m/s | Poursuite et attaque au contact | 100 |
+| Traqueur | 1 | 5 m/s | Approche rapide, fragile | 150 |
+| Colosse | 5 | 1,6 m/s | Lent, résistant, corps plus large | 400 |
+| Sentinelle | 3 | 2,2 m/s | Garde sa distance et tire des projectiles esquivables | 250 |
+
+La détection demande une ligne de vue dégagée. Les gardes et colosses repèrent à 14 m, les traqueurs à 16 m et les sentinelles à 22 m ; la poursuite mémorisée s'arrête respectivement au-delà de 28, 32 ou 36 m. Les délais d'attaque sont propres à chaque ennemi. Les projectiles des sentinelles peuvent être évités et les murs les arrêtent. Le contournement des murs utilise A* sur une grille d'un mètre ; la grille et ses passages déjà vérifiés sont partagés par les gardes.
+
+Un soin rend **1 PV**, une seule fois. À pleine vie, il reste disponible ; une partie perdue ne peut pas être ressuscitée par un soin. Les PV, les éliminations, les points de combat et la graine sont conservés en passant au niveau suivant. Les ennemis et soins du nouveau secteur sont recréés ; ses projectiles commencent à vide.
+
+Le score récompense les éliminations, même en cas de défaite, et ajoute **500 points par secteur franchi**. La victoire finale ajoute **1000 points + 100 par PV restant**. Le formulaire reste réservé à la fin de campagne ou à la défaite ; l'API accepte désormais les scores entiers de **0 à 100000**. Les routes et les statistiques par pseudo conservent leur fonctionnement.
+
+Les deux images AMD64 ont été construites et vérifiées ensemble avec `scripts/smoke-containers.sh` : un score de 1250 points et ses statistiques sont enregistrés via `/api`, puis relus après recréation des conteneurs. Cette vérification utilise son propre volume temporaire.
+
+Pour lire le code par petites étapes :
+
+1. `levelsLayout.test.js` et `levels/` : taille, emplacements libres, deux routes par carte et accès de tous les ennemis, soins et sas. Les ennemis utilisent le catalogue `enemyTypes.js`.
+2. `mission.test.js`, puis `mission.js` : une même graine reproduit les placements, une autre les renouvelle sans modifier les plans.
+3. `game.test.js`, `input.test.js` et `level.test.js` : vitesse normale, Maj, diagonale, petits pas de collision et soins. La petite géométrie fixe de `tests/arena.js` permet de tester ces règles indépendamment des cartes jouables.
+4. `enemy.test.js` et `projectiles.test.js` : poursuite, distances, attaques indépendantes et projectiles qui rencontrent murs ou joueur.
+5. `shoot.test.js` et `score.test.js` : un tir affecte le bon ennemi, une élimination rapporte une seule fois ses points, les sorties et PV donnent les bonus prévus.
+6. `campaign.test.js` : un seul parcours traverse les trois grands secteurs avec leur géométrie réelle. Le test utilise une visée parfaite, tire autant de fois que les PV de chaque ennemi visible et ne tire jamais à travers les murs ; il ne mesure pas la difficulté pour un joueur humain.
+
+```sh
+# Depuis frontend/
+node --test src/mission.test.js
+node --test src/game.test.js src/projectiles.test.js
+node --test src/levelsLayout.test.js src/campaign.test.js
+npm test
+```
+
+Les six tests des grands plans ont été observés en échec avant leur remplacement, puis sont passés au vert. Le parcours de campagne et les tests de configuration ont été adaptés à la graine et aux types d'ennemis sans ajouter trois parcours redondants. Une régression de chevauchement trouvée avec la graine 31 protège aussi la redistribution des ennemis, avec les rayons du catalogue. Après intégration, **104 tests Node et 22 tests backend passent**, ainsi que le **build Vite (52 modules)**.
+
+Les trois scénarios navigateur `menus`, `guards` et `campaign` passent :
+
+- `menus` parcourt réellement le secteur de 64 m jusqu'au sas, compare marche et course, puis vérifie la graine, le plan M, le tracé de tir, la pause et le redimensionnement du Canvas.
+- `guards` utilise une arène contrôlée de 40 m avec les vrais placements aléatoires : détection, marche, pause, attaque, élimination du garde pour 100 points et ramassage d'un soin. Un second essai vérifie l'esquive d'un projectile et le tir maintenu sur une sentinelle pour 250 points.
+- `campaign` vérifie les transitions sur les vrais secteurs de 80 et 96 m, la conservation de 2 PV, les menus intermédiaires, les 2700 points de victoire sans élimination et Rejouer. Les sorties sont temporairement élargies pour ce test de transitions ; il ne parcourt pas toute la campagne dans le navigateur.
+
+La capture native de la souris est simulée dans ces scénarios ; la scène, les commandes, les tirs et les règles du jeu sont exécutés. Ces résultats ne remplacent pas un essai humain pour régler la difficulté. Un contrôle indépendant supplémentaire a vérifié **900 missions** (graines 0 à 299 sur les trois cartes), sans chevauchement, placement dans un mur ni détection au départ, ainsi que **8100 points de passage valides**. Ces contrôles sont distincts du nombre de tests Node et ne prouvent pas tous les cas possibles d'aléatoire.
+
+Les nouveaux sprites conservent quatre poses par feuille, avec leurs prompts et leur provenance :
+
+| Usage | Image | Prompt et provenance |
+| --- | --- | --- |
+| Traqueur | [enemy-runner-sheet.png](frontend/public/art/enemy-runner-sheet.png) | [Métadonnées](frontend/public/art/enemy-runner-sheet.png.json) |
+| Sentinelle | [enemy-gunner-sheet.png](frontend/public/art/enemy-gunner-sheet.png) | [Métadonnées](frontend/public/art/enemy-gunner-sheet.png.json) |
+
+Limites : solo sur ordinateur, déplacements sur un seul étage, sprites orientés vers la caméra à quatre poses. Les tirs du joueur restent instantanés ; les sentinelles disposent de vrais projectiles simulés. Le classement conserve des scores déclarés par le client.
 
 ## Premier trajet complet
 

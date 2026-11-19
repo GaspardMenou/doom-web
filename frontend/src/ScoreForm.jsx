@@ -33,7 +33,7 @@ export function ScoreForm({points, request, onSaved}) {
 
   return <section aria-label="Résultat de la partie">
     <p>Score : <strong>{points} points</strong>.</p>
-    <p id="score-rule" className="hint">Victoire : 60 points + 10 par PV restant. Défaite : 0 point.</p>
+    <p id="score-rule" className="hint">Éliminations + 500 par secteur. Victoire finale : 1 000 + 100 par PV restant. Les éliminations comptent aussi en cas de défaite.</p>
     {status === 'saved' ? <p role="status">Score enregistré.</p> : <form onSubmit={save}>
       <label htmlFor="score-player">Pseudo</label>
       <div className="input-row">

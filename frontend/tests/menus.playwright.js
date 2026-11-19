@@ -1,6 +1,5 @@
-// À exécuter avec browser_run_code_unsafe, filename: frontend/tests/menus.playwright.js.
-// Seule la capture native de la souris est simulée ; le moteur et les scènes sont réels.
-// Le premier niveau est parcouru réellement ; campaign.playwright.js teste les trois transitions avec des sorties simulées.
+// Scène et première carte réelles. Seule la capture native de souris est simulée.
+// Les transitions rapides des trois secteurs sont vérifiées séparément dans campaign.playwright.js.
 async (page) => {
   const check = (ok, message) => { if (!ok) throw new Error(message); };
   const button = async name => {
@@ -9,49 +8,64 @@ async (page) => {
   };
   const health = () => page.locator('#player-health').evaluate(el => el.value);
   const pause = () => page.evaluate(() => document.exitPointerLock());
-  const walk = async (key, ms) => {
-    await page.keyboard.down(key);
-    await page.waitForTimeout(ms);
-    await page.keyboard.up(key);
+  const position = () => page.locator('.tactical-map [data-player-x]').evaluate(el =>
+    ({x: Number(el.dataset.playerX), z: Number(el.dataset.playerZ)}));
+  const map = async () => {
+    await page.keyboard.press('KeyM');
+    await page.locator('.tactical-map [data-player-x]').waitFor();
   };
-  const yellowPixels = () => page.evaluate(() => {
+  const walkTo = async (key, axis, target, increasing) => {
+    await page.keyboard.down(key);
+    try {
+      await page.waitForFunction(({axis, target, increasing}) => {
+        const marker = document.querySelector('.tactical-map [data-player-x]');
+        if (!marker) return false;
+        const value = Number(marker.getAttribute('data-player-' + axis));
+        return increasing ? value >= target : value <= target;
+      }, {axis, target, increasing}, {timeout: 15000});
+    } finally { await page.keyboard.up(key); }
+  };
+  const yellowPixels = () => page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => {
     const source = document.querySelector('canvas');
-    return new Promise(resolve => requestAnimationFrame(() => {
-      const copy = document.createElement('canvas');
-      copy.width = source.width; copy.height = source.height;
-      const context = copy.getContext('2d');
-      context.drawImage(source, 0, 0);
-      const data = context.getImageData(0, 0, copy.width, copy.height).data;
-      let count = 0;
-      for (let p = 0; p < data.length; p += 4) if (data[p] > 230 && data[p + 1] > 180 && data[p + 2] < 170) count++;
-      resolve(count);
-    }));
-  });
+    const copy = document.createElement('canvas');
+    copy.width = source.width; copy.height = source.height;
+    const context = copy.getContext('2d');
+    context.drawImage(source, 0, 0);
+    const data = context.getImageData(0, 0, copy.width, copy.height).data;
+    let count = 0;
+    for (let p = 0; p < data.length; p += 4) if (data[p] > 230 && data[p + 1] > 180 && data[p + 2] < 170) count++;
+    resolve(count);
+  })));
+  let posts = 0;
+  const protectScores = async route => {
+    if (route.request().method() === 'POST') { posts++; await route.abort(); }
+    else await route.continue();
+  };
 
-  await page.goto('http://127.0.0.1:5175');
-  await page.setViewportSize({width: 1440, height: 1000});
-  await page.getByRole('button', {name: 'Jouer', exact: true}).waitFor();
-  await page.evaluate(() => {
-    let locked = null;
-    const canvas = document.querySelector('canvas');
-    Object.defineProperty(document, 'pointerLockElement', {configurable: true, get: () => locked});
-    canvas.requestPointerLock = async () => {
-      if (canvas.getBoundingClientRect().width === 0 || document.activeElement !== canvas) throw new Error('Canvas caché ou sans focus');
-      locked = canvas;
-      document.dispatchEvent(new Event('pointerlockchange'));
-    };
-    document.exitPointerLock = () => { locked = null; document.dispatchEvent(new Event('pointerlockchange')); };
-  });
+  await page.route('**/scores/**', protectScores);
   try {
-    // 1. L'accueil attend le joueur.
-    check(!await page.locator('canvas').isVisible(), 'scène visible avant Jouer');
-    check(await page.evaluate(() => document.activeElement.textContent.startsWith('Jouer')), 'Jouer sans focus');
+    await page.goto('http://127.0.0.1:5175/?seed=12345');
+    await page.setViewportSize({width: 1440, height: 1000});
+    await page.getByRole('button', {name: 'Jouer', exact: true}).waitFor();
+    await page.evaluate(() => {
+      let locked = null;
+      const canvas = document.querySelector('canvas');
+      Object.defineProperty(document, 'pointerLockElement', {configurable: true, get: () => locked});
+      canvas.requestPointerLock = async () => {
+        if (canvas.getBoundingClientRect().width === 0 || document.activeElement !== canvas) throw new Error('Canvas caché ou sans focus');
+        locked = canvas;
+        document.dispatchEvent(new Event('pointerlockchange'));
+      };
+      document.exitPointerLock = () => { locked = null; document.dispatchEvent(new Event('pointerlockchange')); };
+    });
+    check(!await page.locator('canvas').isVisible(), 'scène visible à l’accueil');
     await button('Jouer');
     await page.getByRole('button', {name: /^Pause/}).waitFor({timeout: 5000});
     check(await health() === 3, 'Jouer ne restaure pas les PV');
-    check(await page.locator('.weapon-view').evaluate(el => el.complete && el.naturalWidth > 0), 'sprite absent');
-
-    // 2. Le Canvas remplit la zone de jeu et s'adapte à la fenêtre.
+    await page.waitForFunction(() => {
+      const image = document.querySelector('.weapon-view');
+      return image?.complete && image.naturalWidth > 0;
+    }, null, {timeout: 5000});
     for (const size of [{width: 1024, height: 768}, {width: 1440, height: 1000}]) {
       await page.setViewportSize(size);
       await page.waitForFunction(() => {
@@ -61,45 +75,73 @@ async (page) => {
         return canvas.width === Math.round(box.width * ratio) && canvas.height === Math.round(box.height * ratio);
       }, null, {timeout: 5000});
     }
+    await page.waitForTimeout(300);
     const before = await yellowPixels();
     await page.keyboard.press('Space');
     const during = await yellowPixels();
-    await page.waitForTimeout(150);
+    await page.waitForTimeout(160);
     const after = await yellowPixels();
-    check(during > before && after === before, 'tracé absent ou restant après le tir');
-    check((await page.locator('.enemy-cell > strong').textContent()).replace(/\s/g, '') === '3/3', 'tir traverse le bloc central');
-    await page.screenshot({path: '.playwright-mcp/sprint6-game-desktop.png'});
+    check(during > before && after === before, 'tracé absent ou persistant après le tir');
+    check((await page.locator('.enemy-cell > strong').textContent()).replace(/\s/g, '') === '12/12', 'un tir traverse le dépôt central');
 
-    // 3. Le menu permet de reprendre ; guards.playwright.js vérifie l'arrêt des animations.
+    // Mesurer les deux vitesses sur le même départ, avec la même graine.
+    await map();
+    const start = await position();
+    await page.keyboard.down('KeyW');
+    await page.waitForTimeout(400);
+    await page.keyboard.up('KeyW');
+    await page.waitForTimeout(180);
+    const walked = start.z - (await position()).z;
     await pause();
     await page.getByRole('button', {name: 'Reprendre', exact: true}).waitFor();
-    await page.screenshot({path: '.playwright-mcp/sprint6-pause-desktop.png'});
-    await button('Reprendre');
-    check(await health() === 3, 'Reprendre change les PV');
+    check((await page.locator('.mission-seed').textContent()).includes('12345'), 'la graine de l’URL est ignorée');
+    await page.screenshot({path: '.playwright-mcp/sprint8-pause.png'});
+    await button('Recommencer');
+    await map();
+    const restarted = await position();
+    check(Math.abs(restarted.x - start.x) < 0.01 && Math.abs(restarted.z - start.z) < 0.01, 'Recommencer ne restaure pas le départ');
+    await page.keyboard.down('Shift');
+    await page.keyboard.down('KeyW');
+    await page.waitForTimeout(400);
+    await page.keyboard.up('KeyW');
+    await page.keyboard.up('Shift');
+    await page.waitForTimeout(180);
+    const sprinted = restarted.z - (await position()).z;
+    check(walked > 2 && sprinted > walked * 1.2, `Maj ne produit pas une course plus rapide : marche ${walked}, course ${sprinted}`);
     await pause();
-
-    // 4. Retour à l'accueil, puis Jouer : nouvelle partie.
+    await button('Reprendre');
+    check(await health() === 3, 'Reprendre modifie les PV');
+    await pause();
     await button('Retour à l’accueil');
     check(!await page.locator('canvas').isVisible(), 'scène visible au retour à l’accueil');
+
+    // Parcours réel du secteur de 64 m par son passage périphérique droit.
     await button('Jouer');
-    check(await health() === 3, 'nouvelle partie sans restauration');
-    await walk('KeyD', 1500);
-    await page.keyboard.down('KeyW');
-    await page.getByRole('heading', {name: 'Niveau terminé', exact: true}).waitFor({timeout: 5000});
-    await page.keyboard.up('KeyW');
-    check(await page.getByLabel('Pseudo', {exact: true}).count() === 0, 'formulaire avant le dernier niveau');
+    await map();
+    await walkTo('KeyD', 'x', 30, true);
+    await walkTo('KeyW', 'z', -27.5, false);
+    await page.screenshot({path: '.playwright-mcp/sprint8-exit-approach.png'});
+    await page.keyboard.down('KeyA');
+    await page.getByRole('heading', {name: 'Niveau terminé', exact: true}).waitFor({timeout: 6000});
+    await page.keyboard.up('KeyA');
+    check(await page.getByLabel('Pseudo', {exact: true}).count() === 0, 'formulaire avant le dernier secteur');
     check(await page.getByRole('button', {name: 'Niveau suivant', exact: true}).isVisible(), 'suite de campagne absente');
-    check(await page.evaluate(() => document.pointerLockElement === null), 'souris retenue après victoire');
-    await page.screenshot({path: '.playwright-mcp/sprint6-victory-desktop.png'});
+    check(await page.evaluate(() => document.pointerLockElement === null), 'souris retenue après la sortie');
+    await page.screenshot({path: '.playwright-mcp/sprint8-level-complete.png'});
     await page.setViewportSize({width: 390, height: 844});
     check(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'débordement mobile');
-    await page.screenshot({path: '.playwright-mcp/sprint6-victory-mobile.png'});
-    await page.setViewportSize({width: 1440, height: 1000});
-    await button('Retour à l’accueil');
-    return {home: true, pause: true, resume: true, levelComplete: true, responsiveCanvas: true, tracerPixels: {before, during, after}};
+    await page.screenshot({path: '.playwright-mcp/sprint8-level-complete-mobile.png'});
+    check(posts === 0, 'le parcours a tenté d’enregistrer un score');
+    return {home: true, pause: true, resume: true, seededRestart: true, map: true,
+      movementMeters: {walked, sprinted}, realLargeLevelExit: true, responsiveCanvas: true,
+      tracerPixels: {before, during, after}, scorePosts: posts};
+  } catch (error) {
+    await page.screenshot({path: '.playwright-mcp/sprint8-menus-error.png'});
+    throw error;
   } finally {
-    await page.keyboard.up('KeyW'); await page.keyboard.up('KeyD');
+    for (const key of ['KeyW', 'KeyA', 'KeyD', 'Shift', 'Space']) await page.keyboard.up(key);
     await page.setViewportSize({width: 1440, height: 1000});
     await page.reload();
+    await page.unroute('**/scores/**', protectScores);
   }
 }

@@ -17,13 +17,13 @@ Explorer trois secteurs distincts en vue à la première personne, gérer plusie
 ## Capabilities and Constraints
 
 - React et Three.js dans un Canvas ; API FastAPI et SQLite développées par l'utilisateur. Le front consomme les routes de score et `GET /players/` selon `frontend/API_CONTRACT.md`.
-- Une arme, munitions illimitées et 3 PV pour une campagne de trois plans : dépôt à deux passages de 12 m, quatre pièces reliées sur 14 m, arène à couvertures de 16 m.
-- Trois, quatre puis cinq gardes de 2 PV. Détection à 4 m ou moins avec vue dégagée ; poursuite mémorisée jusqu'à un éloignement supérieur à 6 m. Chaque garde possède sa cadence d'attaque.
-- Gardes en sprites orientés vers la caméra : repos, deux poses de marche, attaque. Murs illustrés propres à chaque secteur ; plan affiché d'après la vraie géométrie.
-- Accueil, pause, reprise, passage au niveau suivant, résultat, nouvelle campagne, pseudo et Top 10. Les PV sont conservés entre niveaux ; Jouer et Rejouer repartent du début avec 3 PV.
-- Aucun score ni formulaire aux sorties intermédiaires. Victoire finale : 60 + 10 par PV restant ; défaite : 0. Le contrat API reste entre 0 et 90 points.
+- Une arme, munitions illimitées et 3 PV maximum pour trois secteurs de 64, 80 et 96 m : dépôt avec bâtiments, six salles de maintenance reliées, réacteur à anneaux et piliers. Marche à 8 m/s et course à 12 m/s avec Maj ; plan en jeu avec M.
+- Douze, dix-huit puis vingt-quatre ennemis : gardes (2 PV), traqueurs rapides (1 PV), colosses résistants (5 PV) et sentinelles à projectiles (3 PV). Détection avec vue dégagée, mémoire à distance et délais d'attaque indépendants.
+- Ennemis en sprites orientés vers la caméra : repos, deux poses de marche, attaque. Murs illustrés par secteur, sas d'extraction lumineux et plan tiré de la vraie géométrie. Placements des ennemis et soins variables, reproductibles par une graine conservée entre niveaux.
+- Accueil, pause, reprise, passage au niveau suivant, résultat, nouvelle campagne, pseudo et Top 10. Les PV sont conservés entre niveaux ; Jouer et Rejouer repartent du début avec 3 PV. Rejouer conserve la graine ; Jouer la renouvelle sauf si l'URL `?seed=` la fixe. Tir maintenu au clic gauche ou avec Espace toutes les 130 ms.
+- Aucun formulaire aux sorties intermédiaires. Points par élimination conservés même en cas de défaite, 500 par secteur franchi et bonus de victoire finale de 1000 + 100 par PV restant. Le contrat API accepte de 0 à 100000 points.
 - Statistiques par pseudo unique : total, nombre de parties et moyenne actualisés à chaque score et conservés dans SQLite. Le score référence le joueur par `player_id` ; l'API conserve aussi le pseudo texte dans sa réponse. États chargement, vide, erreur et nouvel essai ; aucune statistique fictive livrée dans l'application.
-- Trajets sur grille d'un mètre ; pas de collisions entre gardes ni avec le joueur. Sprites à quatre poses, tirs instantanés avec un tracé bref.
+- Collisions entre acteurs vivants et contre les murs, y compris en course. Quatre, six puis huit soins rendent chacun 1 PV sans dépasser 3 et restent disponibles à pleine vie. Navigation A* sur une grille d'un mètre ; tirs instantanés du joueur et projectiles simulés des sentinelles.
 - Images Docker privées AMD64 publiées en CI ; hébergement derrière NPMplus sur une autre machine.
 - Rendu prévu le 20 novembre 2026 après-midi. Code simple, petites étapes et tests compréhensibles.
 
@@ -33,7 +33,9 @@ L'utilisateur demande l'ambiance du premier Doom, une refonte de toute l'UI, le 
 
 ## Evidence on Hand
 
-README.md distingue l'historique des sprints 1 à 6 du fonctionnement actuel du sprint 7. Après relecture des doublons, les 108 tests Node front sont devenus 90 ; frontend/TESTS.md détaille les suppressions, les cas conservés et leurs vérifications. Les 22 tests backend couvrent notamment le cumul des statistiques pour deux scores d'un même joueur. Le parcours unitaire de campagne utilise une visée parfaite ; les scénarios navigateur séparent le vrai trajet du premier niveau et le combat réel des transitions à sorties temporairement élargies. Ils ne constituent pas une campagne complète parcourue à la main dans le navigateur. L'inventaire des six visuels et leurs prompts accompagne ce compte rendu. Les résultats CI restent propres au commit publié.
+README.md distingue l'historique des sprints 1 à 7 de l'extension actuelle du sprint 8. La relecture des doublons du sprint 7 avait ramené les 108 tests Node front à 90 ; frontend/TESTS.md détaille les suppressions, les cas conservés et leurs vérifications. Après intégration du sprint 8, les 104 tests Node et 22 tests backend passent, ainsi que le build Vite de 52 modules. Le backend couvre notamment le cumul des statistiques et la borne de 100000 points. Le test de campagne utilise une visée parfaite ; une régression de la graine 31 couvre le chevauchement des ennemis. Un contrôle complémentaire de 900 missions et 8100 points de passage n'a trouvé ni chevauchement, ni placement dans un mur, ni détection au départ.
+
+Les scénarios navigateur menus, guards et campaign passent : vrai trajet du secteur de 64 m, course, plan M, graine, tirs, combat et soin dans une arène contrôlée de 40 m, esquive d'un projectile de sentinelle et tir maintenu. Les transitions vers les vraies cartes de 80 et 96 m conservent 2 PV et aboutissent à 2700 points ; leurs sorties sont temporairement élargies. La capture native de la souris est simulée. Ces contrôles ne constituent ni une campagne complète parcourue dans le navigateur, ni un réglage de difficulté par un joueur humain. Les visuels et leurs prompts accompagnent ce compte rendu. Les résultats CI restent propres au commit publié.
 
 ## Product Principles
 

@@ -1,0 +1,66 @@
+{
+  "asset": "enemy-runner-sheet.png",
+  "created_at": "2026-11-19",
+  "mode": "built-in image generation with original guard style reference",
+  "tool": "image_gen__imagegen",
+  "transparent_background": true,
+  "original_design": true,
+  "referenced_image": "enemy-guard-sheet.png",
+  "prompt": "Use case: stylized-concept.\nAsset type: production animation sprite sheet for a retro first-person browser game.\nReference image role: the supplied original guard sheet is a STYLE AND GRID REFERENCE. Keep its coarse hand-painted pixel clusters, dark edge shading, muted rusty olive/brown palette, front view, real alpha, and exact 2-by-2 arrangement. Replace the guard with the new archetype described below; it must have a clearly different silhouette and equipment.\nLayout: ONE square transparent PNG, approximately 2048 x 2048, with EXACTLY FOUR frames in an exact 2-column by 2-row grid of equal square cells. Use an even image width and height so each cell is exactly half the image dimensions. The grid is an invisible layout only: NO dividing lines, borders, labels, numbers, extra sprites, ground planes, cast shadows, or scenery.\nPoses in reading order: TOP LEFT = front-facing idle; TOP RIGHT = front-facing WALK A with LEFT leg forward, RIGHT arm forward; BOTTOM LEFT = front-facing WALK B with RIGHT leg forward, LEFT arm forward; BOTTOM RIGHT = distinct front-facing ATTACK. Make the two walking poses visibly alternate arms and feet, not tiny copies of idle.\nFrame alignment: same character identity, scale, torso proportions, head size and center line within all four cells. Every full body including fingers and toes fits completely within its cell. Feet share a ground baseline at 94 percent of each cell's height. Keep at least 8 percent transparent lateral margins and no overlap between cells. The poses may move arms or bend legs, but never zoom or change camera distance between frames.\nStyle: original late-1990s/1993 PC FPS sprite art with deliberately coarse visible pixel clusters, stepped pixel outlines, limited palette and dithered shadows. Avoid smooth 3D renders, modern high-resolution painting, vector art or anime.\nBackground: genuine transparent alpha, including holes between limbs. No colored background, floor, character shadow, words, logos, HUD, gore, or copyrighted game assets.\nNew archetype: a lean, low-hunched demonic stalker built for very fast running. Long thin muscular legs and sinewy arms, angular clawed hands, small swept-back horn nubs, narrow predatory face, bright amber-red eyes, reddish-brown skin, sparse worn olive straps and small scraps of armor only. No bulky chest plate or shoulder armor. Its narrow hunched silhouette must read very differently from the broad guard in the reference. Preserve anatomy and outfit across frames.\nAttack frame: lunging forward in its own cell, one long claw reaching toward the viewer and the other drawn back, aggressive face. No weapon, projectile, blood or gore.",
+  "source_file": "exec-72caf9e9-51b2-40da-aaea-0dbd3caf23d7.png",
+  "output": {
+    "width": 1254,
+    "height": 1254,
+    "mode": "RGBA",
+    "bytes": 1234106,
+    "columns": 2,
+    "rows": 2,
+    "cell_width": 627,
+    "cell_height": 627,
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "transparent_pixels": 999071,
+    "frame_bounds_alpha128": [
+      [
+        97,
+        36,
+        528,
+        592
+      ],
+      [
+        117,
+        44,
+        496,
+        608
+      ],
+      [
+        108,
+        46,
+        507,
+        604
+      ],
+      [
+        37,
+        59,
+        559,
+        599
+      ]
+    ],
+    "baseline_fractions": [
+      0.9442,
+      0.9697,
+      0.9633,
+      0.9553
+    ],
+    "format": "PNG",
+    "frames": [
+      "idle",
+      "walk-left",
+      "walk-right",
+      "attack"
+    ],
+    "postprocessing": "No visual edits, resampling, cropping, or alpha replacement; generated alpha preserved. Exact prompt embedded with Impeccable."
+  }
+}

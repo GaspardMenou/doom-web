@@ -2,6 +2,16 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {bindKeyboard} from './input.js';
 
+test('Maj active la course et son relâchement revient à la vitesse normale', () => {
+  const canvas = new EventTarget();
+  const keyboard = bindKeyboard(canvas);
+  key(canvas, 'keydown', 'ShiftLeft');
+  assert.equal(keyboard.read().sprint, true);
+  key(canvas, 'keyup', 'ShiftLeft');
+  assert.equal(keyboard.read().sprint, false);
+  keyboard.destroy();
+});
+
 function key(target, type, code, character = '') {
   const event = new Event(type, {cancelable: true});
   Object.assign(event, {code, key: character});

@@ -2,13 +2,12 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {scorePoints} from './score.js';
 
-test('une victoire rapporte 60 points plus 10 par PV restant', () => {
-  assert.equal(scorePoints({status: 'won', playerHealth: 3}), 90);
-  assert.equal(scorePoints({status: 'won', playerHealth: 2}), 80);
-  assert.equal(scorePoints({status: 'won', playerHealth: 1}), 70);
+test('les éliminations comptent même après une défaite, avec 500 points par secteur franchi', () => {
+  assert.equal(scorePoints({status: 'playing', levelIndex: 0, killPoints: 250}), 250);
+  assert.equal(scorePoints({status: 'lost', levelIndex: 1, killPoints: 250, playerHealth: 0}), 750);
 });
 
-test('une défaite ou une partie en cours ne rapporte aucun point', () => {
-  assert.equal(scorePoints({status: 'lost', playerHealth: 0}), 0);
-  assert.equal(scorePoints({status: 'playing', playerHealth: 3}), 0);
+test('la victoire finale ajoute 1000 points et 100 par PV, sans bonus final aux sorties intermédiaires', () => {
+  assert.equal(scorePoints({status: 'won', levelIndex: 0, killPoints: 100, playerHealth: 3}), 600);
+  assert.equal(scorePoints({status: 'won', levelIndex: 2, killPoints: 750, playerHealth: 2}), 3450);
 });

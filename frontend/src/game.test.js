@@ -1,107 +1,73 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {advance, newGame, PLAYER_RADIUS} from './game.js';
-import {ROOM_SIZE, WALLS} from './level.js';
+import {ARENA} from '../tests/arena.js';
 
-test('avancer pendant une seconde déplace le joueur de trois mètres', () => {
-  let state = {...newGame(), enemies: []};
-  state.player.x = 3.5;
-  const start = state.player.z;
+function start() {
+  return {...newGame(0, 123), player: {...ARENA.spawn}, enemies: [], projectiles: [], medkits: []};
+}
+const step = (state, input, seconds) => advance(state, input, seconds, ARENA);
 
-  for (let frame = 0; frame < 60; frame++) {
-    state = advance(state, {forward: true}, 1 / 60);
+test('avancer pendant une seconde déplace le joueur de huit mètres', () => {
+  let state = start();
+  state.player = {x: 3.5, z: 5, angle: 0};
+  for (let frame = 0; frame < 60; frame++) state = step(state, {forward: true}, 1 / 60);
+  assert.ok(Math.abs(state.player.z + 3) < 0.000001);
+});
+
+test('la course parcourt douze mètres par seconde sans accélérer la diagonale', () => {
+  const state = start();
+  const straight = step(state, {right: true, sprint: true}, 0.05);
+  const diagonal = step(state, {right: true, backward: true, sprint: true}, 0.05);
+  assert.ok(Math.abs(straight.player.x - 0.6) < 0.000001);
+  assert.ok(Math.abs(Math.hypot(diagonal.player.x, diagonal.player.z - 2) - 0.6) < 0.000001);
+});
+
+test('les directions et le regard orientent le déplacement sans modifier l’ancien état', () => {
+  const state = start();
+  assert.ok(Math.abs(step(state, {backward: true}, 0.05).player.z - 2.4) < 0.000001);
+  assert.ok(Math.abs(step(state, {left: true}, 0.05).player.x + 0.4) < 0.000001);
+  const turned = step(state, {forward: true, angle: Math.PI / 2}, 0.05);
+  assert.ok(Math.abs(turned.player.x + 0.4) < 0.000001);
+  assert.equal(turned.player.angle, Math.PI / 2);
+  assert.deepEqual(state.player, ARENA.spawn);
+});
+
+test('30 ou 60 images par seconde donnent la même distance', () => {
+  function walk(fps) {
+    let state = start();
+    for (let frame = 0; frame < fps / 2; frame++) state = step(state, {right: true}, 1 / fps);
+    return state.player.x;
   }
-
-  assert.ok(Math.abs(state.player.z - (start - 3)) < 0.000001);
-  assert.equal(state.player.x, 3.5);
-});
-
-test('reculer et se décaler utilisent les mêmes commandes simples', () => {
-  const start = {...newGame(), enemies: []};
-  const back = advance(start, {backward: true}, 0.05);
-  const left = advance(start, {left: true}, 0.05);
-  const right = advance(start, {right: true}, 0.05);
-
-  assert.ok(Math.abs(back.player.z - 2.15) < 0.000001);
-  assert.ok(Math.abs(left.player.x + 0.15) < 0.000001);
-  assert.ok(Math.abs(right.player.x - 0.15) < 0.000001);
-  assert.deepEqual(start, {...newGame(), enemies: []});
-});
-
-test('avancer suit la direction du regard', () => {
-  const state = advance({...newGame(), enemies: []}, {forward: true, angle: Math.PI / 2}, 0.05);
-
-  assert.ok(Math.abs(state.player.x + 0.15) < 0.000001);
-  assert.ok(Math.abs(state.player.z - 2) < 0.000001);
-  assert.equal(state.player.angle, Math.PI / 2);
-});
-
-test('marcher en diagonale ne fait pas aller plus vite', () => {
-  const state = advance({...newGame(), enemies: []}, {forward: true, right: true}, 0.05);
-  const distance = Math.hypot(state.player.x, state.player.z - 2);
-
-  assert.ok(state.player.x > 0);
-  assert.ok(Math.abs(distance - 0.15) < 0.000001);
-});
-
-test('30 ou 60 images par seconde donnent le même déplacement', () => {
-  function walk(frames) {
-    let state = {...newGame(), enemies: []};
-    state.player.x = 3.5;
-    for (let frame = 0; frame < frames; frame++) {
-      state = advance(state, {forward: true}, 1 / frames);
-    }
-    return state.player.z;
-  }
-
   assert.ok(Math.abs(walk(30) - walk(60)) < 0.000001);
+  assert.ok(Math.abs(walk(60) - 4) < 0.000001);
 });
 
-test('les quatre murs gardent le joueur à 25 cm du bord de la pièce', () => {
-  const limit = ROOM_SIZE / 2 - PLAYER_RADIUS;
-  const cases = [
-    {x: limit - 0.05, z: 0, input: {right: true}, expectedX: limit, expectedZ: 0},
-    {x: -limit + 0.05, z: 0, input: {left: true}, expectedX: -limit, expectedZ: 0},
-    {x: 0, z: -limit + 0.05, input: {forward: true}, expectedX: 0, expectedZ: -limit},
-    {x: 0, z: limit - 0.05, input: {backward: true}, expectedX: 0, expectedZ: limit},
-  ];
-
-  for (const example of cases) {
-    const state = {...newGame(), enemies: []};
-    state.player.x = example.x;
-    state.player.z = example.z;
-    const next = advance(state, example.input, 0.05);
-
-    assert.equal(next.player.x, example.expectedX);
-    assert.equal(next.player.z, example.expectedZ);
-  }
+test('les bords et le bloc central arrêtent même la course en permettant de longer un mur', () => {
+  const state = start();
+  state.player.x = ARENA.size / 2 - PLAYER_RADIUS;
+  const sliding = step(state, {right: true, forward: true, sprint: true}, 0.05);
+  assert.equal(sliding.player.x, state.player.x);
+  assert.ok(sliding.player.z < state.player.z);
+  let blocked = start();
+  for (let frame = 0; frame < 60; frame++) blocked = step(blocked, {forward: true, sprint: true}, 0.05);
+  assert.ok(blocked.player.z >= -0.25 - 0.000001);
 });
 
-test('le joueur peut longer un mur sans rester bloqué', () => {
-  const state = {...newGame(), enemies: []};
-  state.player.x = ROOM_SIZE / 2 - PLAYER_RADIUS;
-  const next = advance(state, {forward: true, right: true}, 0.05);
-
-  assert.equal(next.player.x, ROOM_SIZE / 2 - PLAYER_RADIUS);
-  assert.ok(next.player.z < state.player.z);
+test('une interruption limite le pas et une partie sans commandes reste immobile', () => {
+  const state = start();
+  assert.ok(Math.abs(step(state, {right: true, sprint: true}, 10).player.x - 0.6) < 0.000001);
+  assert.equal(step(state, {right: true}, -1), state);
+  assert.deepEqual(step(state, {}, 0.05).player, state.player);
 });
 
-test('le joueur ne traverse pas le bloc central avec ses commandes', () => {
-  let state = {...newGame(), enemies: []};
-  for (let frame = 0; frame < 60; frame++) state = advance(state, {forward: true}, 0.05);
-  const wall = WALLS[0];
-  assert.ok(state.player.z >= wall.z + wall.depth / 2 + PLAYER_RADIUS - 0.000001);
-});
-
-test('une longue interruption ne téléporte pas le joueur', () => {
-  const state = {...newGame(), enemies: []};
-  const next = advance(state, {forward: true}, 10);
-
-  assert.ok(Math.abs(next.player.z - 1.85) < 0.000001);
-  assert.deepEqual(advance(state, {forward: true}, -1), state);
-});
-
-test('sans commande, le joueur reste immobile', () => {
-  const state = {...newGame(), enemies: []};
-  assert.deepEqual(advance(state, {}, 0.05).player, state.player);
+test('un soin rend un PV une seule fois, reste disponible à pleine vie et ne ressuscite pas', () => {
+  const state = {...start(), playerHealth: 1, medkits: [{id: 'health', x: 0, z: 2, taken: false}]};
+  const healed = step(state, {}, 0.05);
+  assert.equal(healed.playerHealth, 2);
+  assert.equal(healed.medkits[0].taken, true);
+  assert.equal(step(healed, {}, 0.05).playerHealth, 2);
+  assert.equal(step({...state, playerHealth: 3}, {}, 0.05).medkits[0].taken, false);
+  assert.equal(step({...state, playerHealth: 0, status: 'lost'}, {}, 0.05).playerHealth, 0);
+  assert.equal(state.medkits[0].taken, false);
 });

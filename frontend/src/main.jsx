@@ -78,11 +78,11 @@ function App() {
     }
   }
 
-  function start() {
+  function start(seed) {
     if (!game.current) return;
     // La capture nécessite un Canvas visible et le clic utilisateur.
     flushSync(() => {
-      game.current.restart();
+      game.current.restart(seed);
       setHome(false);
     });
     game.current.resume();
@@ -123,10 +123,10 @@ function App() {
       <section className="home-grid" aria-label="Accueil">
         <div className="mission-intro">
           <h1>Doom <span>Web</span></h1>
-          <h2>Une seule issue. Restez en vie.</h2>
-          <p>Explorez {LEVELS.length} secteurs différents. Les gardes vous repèrent à courte portée. À vous de rejoindre la dernière sortie.</p>
-          <button className="primary play-button" autoFocus disabled={unavailable} onClick={start}>Jouer <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg></button>
-          <p className="mission-facts">{LEVELS.length} niveaux <span>·</span> 3 PV au départ <span>·</span> Munitions illimitées</p>
+          <h2>Courez. Ripostez. Trouvez le sas.</h2>
+          <p>Trois grands secteurs, jusqu’à 96 mètres de côté. Traqueurs, colosses et sentinelles occupent les passages. Chaque mission redistribue les rencontres et les soins.</p>
+          <button className="primary play-button" autoFocus disabled={unavailable} onClick={() => start()}>Jouer <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg></button>
+          <p className="mission-facts">64 / 80 / 96 m <span>·</span> 4 types d’ennemis <span>·</span> Tirs illimités</p>
           {unavailable && <p role="alert" className="error">{state.error}</p>}
         </div>
         <LevelMap />
@@ -150,19 +150,30 @@ function App() {
           <svg className="crosshair" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v5m0 8v5M3 12h5m8 0h5" /></svg>
           <img className="weapon-view" src="/art/pistol-view.png" alt="" />
         </>}
+        {playing && <div className="mission-strip">
+          <span>Score <strong>{scorePoints(state)}</strong></span>
+          <span>{state.player ? `${Math.round(Math.hypot(level.exit.x - state.player.x, level.exit.z - state.player.z))} m du sas` : 'Rejoignez le sas'}</span>
+          <span><kbd>M</kbd> {state.mapVisible ? 'Fermer le plan' : 'Plan'}</span>
+        </div>}
+        {playing && state.mapVisible && <aside className="tactical-map" aria-label="Plan tactique">
+          <LevelMap level={level} player={state.player} enemies={state.enemies} medkits={state.medkits} />
+        </aside>}
+        {playing && state.hurt && <div className="damage-flash" aria-hidden="true" />}
       </div>
-      <p className="game-message" role="status">{campaignWon ? 'Victoire : tous les niveaux sont terminés !' : won ? 'Niveau terminé : la suite vous attend.' : lost ? 'Défaite : vous n’avez plus de vie.' : playing ? (state.lastShot || 'Objectif : rejoignez la sortie verte.') : 'En pause : la partie vous attend.'}</p>
+      <p className="game-message" role="status">{campaignWon ? 'Victoire : tous les niveaux sont terminés !' : won ? 'Niveau terminé : la suite vous attend.' : lost ? 'Défaite : vous n’avez plus de vie.' : playing ? (state.lastShot || 'Objectif : rejoignez le sas vert. Maj pour courir.') : 'En pause : la partie vous attend.'}</p>
       <Hud state={state} />
       {!playing && !home && <section className={`game-overlay${won ? ' has-won' : ''}`} aria-label={won || lost ? 'Fin de partie' : 'Menu de pause'}>
         <div className="menu-panel">
           <h2>{campaignWon ? 'Victoire' : won ? 'Niveau terminé' : lost ? 'Défaite' : unavailable ? 'Signal perdu' : 'En pause'}</h2>
           <p>{campaignWon ? 'Vous avez traversé les trois niveaux. Inscrivez votre nom.' : won ? `${level.name} est derrière vous. Vos PV sont conservés pour la suite.` : lost ? 'Le secteur a eu raison de vous. Retentez votre chance.' : 'Soufflez un instant. Le secteur peut attendre.'}</p>
+          <p className="mission-seed">Mission {state.seed} · {state.kills ?? 0} éliminations · {scorePoints(state)} points</p>
+          <p className="menu-tips">Maintenez le tir. Maj pour courir. M pour le plan. Les trousses rendent un PV.</p>
           {state.error && <p role="alert" className="error">{state.error}</p>}
           {(campaignWon || lost) && <ScoreForm points={scorePoints(state)} request={request} onSaved={loadScores} />}
           <div className="menu-actions">
             {!won && !lost && !unavailable && <button className="primary" autoFocus onClick={() => game.current.resume()}>Reprendre</button>}
             {won && hasNext && <button className="primary" autoFocus onClick={goNext}>Niveau suivant</button>}
-            {!unavailable && <button className={campaignWon || lost ? 'primary' : 'secondary'} autoFocus={campaignWon || lost} onClick={start}>{won || lost ? 'Rejouer' : 'Recommencer'}</button>}
+            {!unavailable && <button className={campaignWon || lost ? 'primary' : 'secondary'} autoFocus={campaignWon || lost} onClick={() => start(state.seed)}>{won || lost ? 'Rejouer' : 'Recommencer'}</button>}
             <button className="secondary" onClick={goHome}>Retour à l’accueil</button>
           </div>
         </div>
@@ -170,7 +181,7 @@ function App() {
     </section>
 
     <div id="commands" className="commands" hidden={!home && playing}>
-      <span><kbd>ZQSD</kbd> / <kbd>WASD</kbd> Marcher</span><span><kbd>Souris</kbd> Viser</span><span><kbd>Clic</kbd> / <kbd>Espace</kbd> Tirer</span><span><kbd>Échap</kbd> Pause</span>
+      <span><kbd>ZQSD</kbd> / <kbd>WASD</kbd> Bouger</span><span><kbd>Maj</kbd> Courir</span><span><kbd>Souris</kbd> Viser</span><span><kbd>Clic</kbd> / <kbd>Espace</kbd> Maintenir le tir</span><span><kbd>M</kbd> Plan</span><span><kbd>Échap</kbd> Pause</span>
     </div>
   </main>;
 }

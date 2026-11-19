@@ -1,23 +1,38 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {NearestFilter, RepeatWrapping, SRGBColorSpace, Texture} from 'three';
+import {NearestFilter, PerspectiveCamera, RepeatWrapping, SRGBColorSpace, Texture} from 'three';
 import {LEVELS} from './levels/index.js';
 import {createRoom} from './room.js';
+import {castShot} from './shooting.js';
+
+const level = {
+  ...LEVELS[0], size: 64, height: 5, walls: [],
+  enemies: [
+    {id: 'guard', type: 'guard', x: 0, z: -5},
+    {id: 'brute', type: 'brute', x: 5, z: -5},
+    {id: 'runner', type: 'runner', x: -5, z: -5},
+    {id: 'gunner', type: 'gunner', x: 10, z: -5},
+  ],
+  medkits: [{id: 'health', x: 0, z: -2}],
+  exit: {x: 6, z: -12, width: 3, depth: 3},
+};
 
 function disposeRoom(scene) {
-  for (const object of scene.children) {
+  scene.traverse(object => {
+    if (!object.isMesh) return;
     object.geometry.dispose();
     object.material.map?.dispose();
     object.material.dispose();
-  }
+  });
 }
 
 test('les images de murs et de gardes remplacent les textures de secours sans les partager', () => {
-  const level = LEVELS[1];
   const loads = new Map();
   const scene = createRoom(level, (url, callback) => loads.set(url, callback));
-  assert.deepEqual([...loads.keys()], [level.wallTexture, '/art/enemy-guard-sheet.png']);
-  const walls = scene.children.filter(object => object.geometry.type === 'BoxGeometry' && !object.userData.enemyId);
+  assert.deepEqual([...loads.keys()], [level.wallTexture,
+    '/art/enemy-guard-sheet.png', '/art/enemy-runner-sheet.png', '/art/enemy-gunner-sheet.png']);
+  const walls = scene.children.filter(object => object.isMesh && object.geometry.type === 'BoxGeometry' &&
+    !object.userData.enemyId && !object.userData.decorative);
   let oldMapsDisposed = 0;
   for (const wall of walls) wall.material.map.addEventListener('dispose', () => oldMapsDisposed++);
   const source = new Texture({src: 'test-wall.webp'});
@@ -37,9 +52,9 @@ test('les images de murs et de gardes remplacent les textures de secours sans le
     assert.equal(map.colorSpace, SRGBColorSpace);
     assert.equal(map.wrapS, RepeatWrapping);
     assert.equal(map.wrapT, RepeatWrapping);
-    assert.deepEqual(map.repeat.toArray(), [Math.max(wall.geometry.parameters.width, wall.geometry.parameters.depth) / 2, 1.5]);
+    assert.deepEqual(map.repeat.toArray(), [Math.max(wall.geometry.parameters.width, wall.geometry.parameters.depth) / 2, 2.5]);
   }
-  const models = scene.children.filter(object => object.name.startsWith('enemy-model:'));
+  const models = ['guard', 'brute'].map(id => scene.getObjectByName(`enemy-model:${id}`));
   const enemyImage = new Texture({src: 'test-guard.png'});
   let oldEnemyMapDisposed = 0;
   for (const model of models) model.material.map.addEventListener('dispose', () => oldEnemyMapDisposed++);
@@ -55,13 +70,20 @@ test('les images de murs et de gardes remplacent les textures de secours sans le
     assert.deepEqual(model.material.map.offset.toArray(), [0, 0.5]);
     assert.equal(model.material.map.userData.animationSheet, true);
   }
+  const runnerImage = new Texture({src: 'test-runner.png'});
+  const gunnerImage = new Texture({src: 'test-gunner.png'});
+  loads.get('/art/enemy-runner-sheet.png')(runnerImage);
+  loads.get('/art/enemy-gunner-sheet.png')(gunnerImage);
+  assert.equal(scene.getObjectByName('enemy-model:runner').material.map.image, runnerImage.image);
+  assert.equal(scene.getObjectByName('enemy-model:gunner').material.map.image, gunnerImage.image);
   disposeRoom(scene);
 });
 
 test('les images arrivées après le démontage sont libérées sans changer la scène', () => {
   const loads = new Map();
-  const scene = createRoom(LEVELS[0], (url, callback) => loads.set(url, callback));
-  const maps = scene.children.map(object => object.material.map);
+  const scene = createRoom(level, (url, callback) => loads.set(url, callback));
+  const models = scene.children.filter(object => object.isMesh);
+  const maps = models.map(object => object.material.map);
   scene.userData.disposed = true;
   disposeRoom(scene);
   let disposed = 0;
@@ -71,6 +93,26 @@ test('les images arrivées après le démontage sont libérées sans changer la 
     callback(image);
   }
 
-  assert.equal(disposed, 2);
-  assert.deepEqual(scene.children.map(object => object.material.map), maps);
+  assert.equal(disposed, 4);
+  assert.deepEqual(models.map(object => object.material.map), maps);
+});
+
+test('le sas signale la sortie en hauteur et les soins ne bloquent pas les tirs', () => {
+  const scene = createRoom(level);
+  const gate = scene.getObjectByName('exit-gate');
+  const signal = scene.getObjectByName('exit-signal');
+  const medkit = scene.getObjectByName('medkit:health');
+  assert.ok(gate && signal, 'la sortie doit avoir une structure et un signal distincts du sol');
+  assert.ok(signal.position.y > 3);
+  assert.equal(signal.material.fog, false);
+  assert.deepEqual([medkit.position.x, medkit.position.z], [0, -2]);
+  const decorations = [];
+  scene.traverse(object => {
+    if (object.isMesh && object.userData.decorative) decorations.push(object);
+  });
+  const target = scene.getObjectByName('target:guard');
+  const camera = new PerspectiveCamera(85, 1, 0.05, 140);
+  camera.position.set(0, 0.2, 2);
+  assert.equal(castShot(camera, [...decorations, target]).object, target);
+  disposeRoom(scene);
 });

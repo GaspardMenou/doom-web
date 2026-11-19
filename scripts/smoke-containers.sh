@@ -35,7 +35,7 @@ assert 'localhost:8001' not in bundle, "Le build utilise encore l'API locale"
 with urlopen(base + '/api/scores/', timeout=10) as response:
     assert json.load(response) == [], "Le proxy /api ne renvoie pas le classement JSON"
 request = Request(base + '/api/scores/', data=json.dumps({
-    'player': 'Docker smoke', 'points': 42,
+    'player': 'Docker smoke', 'points': 1250,
 }).encode(), headers={'Content-Type': 'application/json'}, method='POST')
 with urlopen(request, timeout=10) as response:
     assert response.status == 201
@@ -43,7 +43,7 @@ with urlopen(request, timeout=10) as response:
 assert set(saved) == {'id', 'player', 'player_id', 'points', 'created_at'}
 assert type(saved['id']) is int and saved['id'] > 0
 assert type(saved['player_id']) is int and saved['player_id'] > 0
-assert saved['player'] == 'Docker smoke' and saved['points'] == 42
+assert saved['player'] == 'Docker smoke' and saved['points'] == 1250
 assert datetime.fromisoformat(saved['created_at']).tzinfo is not None
 try:
     urlopen(Request(base + '/api/scores/', data=json.dumps({
@@ -59,9 +59,9 @@ with urlopen(base + '/api/players/', timeout=10) as response:
 assert players == [{
     'id': saved['player_id'],
     'player': 'Docker smoke',
-    'total_points': 42,
+    'total_points': 1250,
     'games_played': 1,
-    'average_points': 42.0,
+    'average_points': 1250.0,
 }], "Le joueur associé au score ou ses statistiques sont incorrects"
 try:
     urlopen(base + '/api/absent', timeout=10)

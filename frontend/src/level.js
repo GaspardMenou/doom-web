@@ -12,13 +12,23 @@ export function canStand(x, z, radius, level = LEVELS[0]) {
     Math.abs(z - wall.z) < wall.depth / 2 + radius);
 }
 
-export function moveInLevel(position, dx, dz, radius, level = LEVELS[0]) {
-  // shortcut: petits pas (0,15 m maximum dans advance) ; revoir la collision pour une téléportation ou un sprint.
+export function moveInLevel(position, dx, dz, radius, level = LEVELS[0], blockers = []) {
   const limit = level.size / 2 - radius;
-  let x = Math.max(-limit, Math.min(limit, position.x + dx));
-  if (!canStand(x, position.z, radius, level)) x = position.x;
-  let z = Math.max(-limit, Math.min(limit, position.z + dz));
-  if (!canStand(x, z, radius, level)) z = position.z;
+  const steps = Math.max(1, Math.ceil(Math.max(Math.abs(dx), Math.abs(dz)) / 0.1));
+  let {x, z} = position;
+  function clear(nextX, nextZ) {
+    return canStand(nextX, nextZ, radius, level) && blockers.every(actor => {
+      const distance = Math.hypot(nextX - actor.x, nextZ - actor.z);
+      return distance >= radius + (actor.radius ?? 0.5) - 0.000001 ||
+        distance > Math.hypot(x - actor.x, z - actor.z) + 0.000001;
+    });
+  }
+  for (let step = 0; step < steps; step++) {
+    const nextX = Math.max(-limit, Math.min(limit, x + dx / steps));
+    if (clear(nextX, z)) x = nextX;
+    const nextZ = Math.max(-limit, Math.min(limit, z + dz / steps));
+    if (clear(x, nextZ)) z = nextZ;
+  }
   return {x, z};
 }
 

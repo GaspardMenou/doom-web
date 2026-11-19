@@ -862,6 +862,25 @@ input {
     bottom: calc(var(--hud-height) + 10px);
   }
 }
+.mission-strip {
+  position: absolute; top: 88px; left: 26px; z-index: 3;
+  display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center;
+  padding: 10px 14px; background: #11180ee8; color: #e9e3d4; font-size: 16px;
+  border: 1px solid #626653;
+}
+.mission-strip strong { color: #f0d29c; font-variant-numeric: tabular-nums; margin-left: 8px; }
+.tactical-map { position: absolute; z-index: 4; top: 88px; right: 24px; width: min(350px, 40vw); pointer-events: none; }
+.tactical-map .level-map { width: 100%; margin: 0; background: #11180ff5; }
+.tactical-map .level-map > svg { height: auto; width: 100%; }
+.map-health { stroke: #f4ddc3; stroke-width: 0.6; fill: none; }
+.map-direction { stroke: #f4c782; stroke-width: 0.65; fill: none; }
+.mission-seed { color: #f0d29c; font-variant-numeric: tabular-nums; font-size: 16px; }
+.menu-tips { color: #c2c9af; font-size: 16px; line-height: 1.5; }
+.damage-flash { position: absolute; inset: 0; pointer-events: none; box-shadow: inset 0 0 90px 28px #b72d2d75; }
+@media (max-width: 700px) {
+  .mission-strip { top: 70px; left: 12px; right: 12px; gap: 8px 14px; font-size: 14px; padding: 8px; }
+  .tactical-map { top: 130px; right: 12px; width: min(310px, 70vw); }
+}
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

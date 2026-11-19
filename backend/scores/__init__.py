@@ -32,7 +32,7 @@ class Score(Base):
 class ScoreCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
     player: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=24, strict=True)]
-    points: Annotated[int, Field(strict=True, ge=0, le=90)]
+    points: Annotated[int, Field(strict=True, ge=0, le=100000)]
 
 class ScoreRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)

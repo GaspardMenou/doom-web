@@ -1,4 +1,4 @@
-const movementKeys = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight'];
+const movementKeys = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight', 'ShiftLeft', 'ShiftRight'];
 
 export function bindKeyboard(canvas) {
   const pressed = new Set();
@@ -21,6 +21,7 @@ export function bindKeyboard(canvas) {
         backward: pressed.has('KeyS') || pressed.has('ArrowDown'),
         left: pressed.has('KeyA') || pressed.has('ArrowLeft'),
         right: pressed.has('KeyD') || pressed.has('ArrowRight'),
+        sprint: pressed.has('ShiftLeft') || pressed.has('ShiftRight'),
       };
     },
     clear,

@@ -3,6 +3,10 @@ import test from 'node:test';
 import {BoxGeometry, BufferGeometry, Line, LineBasicMaterial, Mesh, MeshBasicMaterial, PerspectiveCamera, Vector3} from 'three';
 import {castShot} from './shooting.js';
 import {createRoom} from './room.js';
+import {ARENA} from '../tests/arena.js';
+
+const TRAINING_ROOM = {...ARENA, height: 4.5, wallTexture: '/art/walls/entry.webp',
+  enemies: [{id: 'target', type: 'guard', x: 0, z: -4.5}]};
 
 test('le tir donne le point du premier impact sur le mur devant la cible', () => {
   const camera = new PerspectiveCamera(75, 1, 0.1, 100);
@@ -85,8 +89,8 @@ test('les déplacements de la caméra et de la cible sont pris en compte entre d
   assert.equal(castShot(camera, [target]).object, target);
 });
 
-test('dans le niveau réel, la cloison bloque le tir mais le passage le laisse passer', () => {
-  const scene = createRoom();
+test('dans une vraie scène, la cloison bloque le tir mais le passage le laisse passer', () => {
+  const scene = createRoom(TRAINING_ROOM);
   const target = scene.children.find(object => object.userData.enemyId);
   const camera = new PerspectiveCamera(75, 1, 0.1, 100);
   camera.position.set(0, 1.6, 2);
@@ -99,7 +103,7 @@ test('dans le niveau réel, la cloison bloque le tir mais le passage le laisse p
 });
 
 test('le garde reste touchable à bout portant même au contact de son sprite', () => {
-  const scene = createRoom();
+  const scene = createRoom(TRAINING_ROOM);
   const target = scene.children.find(object => object.userData.enemyId);
   const camera = new PerspectiveCamera(75, 1, 0.05, 100);
   camera.position.set(target.position.x, 1.6, target.position.z);

@@ -1,7 +1,6 @@
-// À exécuter avec browser_run_code_unsafe, filename: frontend/tests/campaign.playwright.js.
-// La capture souris est simulée. Pour tester rapidement les menus, les sorties sont
-// élargies autour du spawn uniquement dans les modules du navigateur, puis restaurées.
-// Les captures précèdent ces mutations ; les déplacements et collisions restent couverts par les tests unitaires.
+// Les captures montrent les trois vraies cartes. Les transitions seules utilisent des sorties élargies.
+// La perte d’un PV est obtenue dans une arène contrôlée injectée uniquement dans le navigateur.
+// Toute mutation disparaît au rechargement final ; aucun score de test n’est envoyé au backend.
 async (page) => {
   const check = (ok, message) => { if (!ok) throw new Error(message); };
   const button = async name => {
@@ -10,25 +9,26 @@ async (page) => {
   };
   const health = () => page.locator('#player-health').evaluate(el => el.value);
   const pause = () => page.evaluate(() => document.exitPointerLock());
-  const expectedGuards = [3, 4, 5];
+  const map = async () => {
+    await page.keyboard.press('KeyM');
+    await page.locator('.tactical-map [data-player-x]').waitFor();
+  };
+  const expectedGuards = [12, 18, 24];
   let posts = 0;
   const protectScores = async route => {
-    if (route.request().method() === 'POST') {
-      posts++;
-      await route.abort();
-    } else await route.continue();
+    if (route.request().method() === 'POST') { posts++; await route.abort(); }
+    else await route.continue();
   };
-
   await page.route('**/scores/**', protectScores);
   try {
-    await page.goto('http://127.0.0.1:5175');
+    await page.goto('http://127.0.0.1:5175/?seed=12345');
     await page.setViewportSize({width: 1440, height: 1000});
     await page.getByRole('button', {name: 'Jouer', exact: true}).waitFor();
     const levels = await page.evaluate(async () => {
       const {LEVELS} = await import('/src/levels/index.js');
-      return LEVELS.map(level => ({name: level.name, spawn: {...level.spawn}, exit: {...level.exit}}));
+      return structuredClone(LEVELS);
     });
-    check(levels.length === 3, 'la campagne doit proposer trois niveaux');
+    check(levels.length === 3 && levels.map(level => level.size).join(',') === '64,80,96', 'les grandes cartes sont absentes');
     await page.evaluate(() => {
       let locked = null;
       const canvas = document.querySelector('canvas');
@@ -40,35 +40,57 @@ async (page) => {
       };
       document.exitPointerLock = () => { locked = null; document.dispatchEvent(new Event('pointerlockchange')); };
     });
-    const checkLevel = async index => {
+    const checkLevel = async (index, count = expectedGuards[index]) => {
       await page.waitForFunction(({name, number}) => {
         const cell = document.querySelector('.mission-cell');
         return cell?.querySelector('strong')?.textContent.trim() === name &&
-          cell.querySelector('small')?.textContent.replace(/\s/g, '') === `Niveau${number}/3`;
+          cell.querySelector('small')?.textContent.replace(/\s/g, '') === 'Niveau' + number + '/3';
       }, {name: levels[index].name, number: index + 1}, {timeout: 5000});
       await page.getByRole('button', {name: /^Pause/}).waitFor();
-      const guards = (await page.locator('.enemy-cell > strong').textContent()).replace(/\s/g, '');
-      check(guards === `${expectedGuards[index]}/${expectedGuards[index]}`, 'gardes non réinitialisés');
+      check((await page.locator('.enemy-cell > strong').textContent()).replace(/\s/g, '') === count + '/' + count, 'hostiles non réinitialisés');
     };
 
+    // Capturer le vrai premier secteur avant de remplacer ses données pour le test de blessure.
     await button('Jouer');
-    let carriedHealth = 3;
-    for (let index = 0; index < levels.length; index++) {
-      await checkLevel(index);
-      check(await health() === carriedHealth, 'les PV ont changé pendant le passage au niveau suivant');
-      check(await page.getByLabel('Pseudo', {exact: true}).count() === 0, 'formulaire présent pendant un niveau');
-      await page.waitForTimeout(400);
-      await page.screenshot({path: `.playwright-mcp/sprint7-level${index + 1}.png`});
+    await checkLevel(0);
+    await map();
+    await page.waitForTimeout(400);
+    await page.screenshot({path: '.playwright-mcp/sprint8-level1.png'});
+    check(await health() === 3, 'la vraie carte commence sous attaque');
+    await pause();
+    await button('Retour à l’accueil');
+    const guard = await page.evaluate(async () => {
+      const {LEVELS} = await import('/src/levels/index.js');
+      const {newGame} = await import('/src/game.js');
+      Object.assign(LEVELS[0], {size: 40, height: 4.5, spawn: {x: 0, z: 15, angle: 0}, walls: [],
+        enemies: [{id: 'browser-guard', type: 'guard', x: 0, z: -5}], medkits: [],
+        exit: {x: 17, z: -17, width: 3, depth: 3}});
+      const initial = newGame(0, 12345);
+      const enemy = initial.enemies[0];
+      LEVELS[0].spawn.angle = Math.atan2(-(enemy.x - initial.player.x), -(enemy.z - initial.player.z));
+      return enemy;
+    });
+    await button('Jouer');
+    await checkLevel(0, 1);
+    await map();
+    await page.keyboard.down('KeyW');
+    await page.waitForFunction(guard => {
+      const marker = document.querySelector('.tactical-map [data-player-x]');
+      return marker && Math.hypot(Number(marker.dataset.playerX) - guard.x, Number(marker.dataset.playerZ) - guard.z) <= 12;
+    }, guard, {timeout: 6000});
+    await page.keyboard.up('KeyW');
+    await page.waitForFunction(() => document.querySelector('#player-health').value === 2, null, {timeout: 8000});
+    await pause();
 
-      if (index === 0) {
-        // Le déplacement déclenche réellement la détection du garde à droite ; aucun PV n’est injecté.
-        await page.keyboard.down('KeyD');
-        await page.waitForTimeout(1200);
-        await page.keyboard.up('KeyD');
-        await page.waitForFunction(() => document.querySelector('#player-health').value === 2, null, {timeout: 10000});
-        carriedHealth = 2;
+    for (let index = 0; index < levels.length; index++) {
+      if (index > 0) {
+        await checkLevel(index);
+        check(await health() === 2, 'les PV ont changé au passage au secteur suivant');
+        await map();
+        await page.waitForTimeout(400);
+        await page.screenshot({path: '.playwright-mcp/sprint8-level' + (index + 1) + '.png'});
+        await pause();
       }
-      await pause();
       await page.getByRole('button', {name: 'Reprendre', exact: true}).waitFor();
       await page.evaluate(async index => {
         const {LEVELS} = await import('/src/levels/index.js');
@@ -78,29 +100,37 @@ async (page) => {
       await button('Reprendre');
       const final = index === levels.length - 1;
       await page.getByRole('heading', {name: final ? 'Victoire' : 'Niveau terminé', exact: true}).waitFor({timeout: 5000});
-      check(await health() === carriedHealth, 'fin de niveau sans conservation des PV');
-      check(await page.evaluate(() => document.pointerLockElement === null), 'souris retenue après un niveau');
-      await page.evaluate(async ({index, exit}) => {
+      check(await health() === 2, 'la fin du secteur modifie les PV');
+      check(await page.evaluate(() => document.pointerLockElement === null), 'souris retenue après un secteur');
+      await page.evaluate(async ({index, original}) => {
         const {LEVELS} = await import('/src/levels/index.js');
-        Object.assign(LEVELS[index].exit, exit);
-      }, {index, exit: levels[index].exit});
+        if (index === 0) Object.assign(LEVELS[0], original);
+        else Object.assign(LEVELS[index].exit, original.exit);
+      }, {index, original: levels[index]});
       if (final) {
         check(await page.getByLabel('Pseudo', {exact: true}).isVisible(), 'formulaire absent après la campagne');
-        check(await page.getByRole('button', {name: 'Niveau suivant', exact: true}).count() === 0, 'niveau supplémentaire après la finale');
+        check(await page.getByRole('button', {name: 'Niveau suivant', exact: true}).count() === 0, 'secteur supplémentaire après la finale');
+        check(parseInt(await page.locator('section[aria-label="Résultat de la partie"] strong').textContent(), 10) === 2700, 'bonus de victoire/PV incorrects');
+        await page.screenshot({path: '.playwright-mcp/sprint8-campaign-victory.png'});
       } else {
-        check(await page.getByLabel('Pseudo', {exact: true}).count() === 0, 'formulaire prématuré avant le dernier niveau');
+        check(await page.getByLabel('Pseudo', {exact: true}).count() === 0, 'formulaire avant le dernier secteur');
         await button('Niveau suivant');
       }
     }
-
     await button('Rejouer');
     await checkLevel(0);
     check(await health() === 3, 'Rejouer ne restaure pas les PV');
-    check(await page.getByLabel('Pseudo', {exact: true}).count() === 0, 'ancien formulaire conservé après Rejouer');
+    check(Number(await page.locator('.mission-strip strong').textContent()) === 0, 'Rejouer ne remet pas les points à zéro');
+    check(await page.getByLabel('Pseudo', {exact: true}).count() === 0, 'ancien formulaire après Rejouer');
     check(posts === 0, 'la navigation a tenté d’enregistrer un score');
-    return {levels: levels.map(level => level.name), guards: expectedGuards, intermediateMenus: 2, carriedHealth, enemyReset: true, finalScoreForm: true, replay: true, scorePosts: posts, exitSimulation: 'browser-only enlarged exits; each exit restored after victory, reload restores modules'};
+    return {levels: levels.map(level => level.name), sizes: levels.map(level => level.size), guards: expectedGuards,
+      intermediateMenus: 2, carriedHealth: 2, victoryPoints: 2700, replay: true, scorePosts: posts,
+      simulation: 'capture souris, arène contrôlée pour la blessure et sorties élargies pour les transitions uniquement dans le navigateur'};
+  } catch (error) {
+    await page.screenshot({path: '.playwright-mcp/sprint8-campaign-error.png'});
+    throw error;
   } finally {
-    await page.keyboard.up('KeyD');
+    await page.keyboard.up('KeyW');
     await page.reload();
     await page.unroute('**/scores/**', protectScores);
   }

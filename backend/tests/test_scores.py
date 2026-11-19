@@ -38,7 +38,7 @@ def test_post_score_then_read_leaderboard(client):
     {"player": 42, "points": 80},
     {"player": None, "points": 80},
     {"player": "Ada", "points": -1},
-    {"player": "Ada", "points": 91},
+    {"player": "Ada", "points": 100001},
     {"player": "Ada", "points": True},
     {"player": "Ada", "points": False},
     {"player": "Ada", "points": 80.0},
@@ -55,7 +55,7 @@ def test_invalid_score_does_not_write(client, payload):
     assert client.get("/scores/").json() == []
 
 
-@pytest.mark.parametrize(("player", "points"), [("A", 0), ("A" * 24, 90)])
+@pytest.mark.parametrize(("player", "points"), [("A", 0), ("A" * 24, 100000)])
 def test_score_boundaries_are_accepted(client, player, points):
     response = client.post("/scores/", json={"player": player, "points": points})
 

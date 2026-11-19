@@ -1,99 +1,95 @@
-import {advance, newGame, WIDTH, HEIGHT} from './game.js';
+import * as THREE from 'three';
+import {PointerLockControls} from 'three/addons/controls/PointerLockControls.js';
+import {advance, newGame} from './game.js';
+import {bindKeyboard} from './input.js';
+import {createRoom} from './room.js';
 
-export function draw(context, state) {
-  context.fillStyle = '#102b29';
-  context.fillRect(0, 0, WIDTH, HEIGHT);
-  context.fillStyle = '#a8e4c4';
-  const player = state.player;
-  context.fillRect(player.x, player.y, player.w, player.h);
-  context.fillStyle = '#f4be70';
-  for (const enemy of state.enemies) context.fillRect(enemy.x, enemy.y, enemy.w, enemy.h);
-  context.fillStyle = '#ffffff';
-  for (const bullet of state.bullets) context.fillRect(bullet.x, bullet.y, bullet.w, bullet.h);
-  context.font = '16px Arial';
-  context.fillText(`${state.score} points`, 18, 25);
-  context.fillText(`${Math.ceil(state.remaining)} s`, WIDTH - 65, 25);
-  if (state.status !== 'playing') {
-    context.fillStyle = '#102b29e8';
-    context.fillRect(0, 130, WIDTH, 120);
-    context.fillStyle = '#ffffff';
-    context.textAlign = 'center';
-    context.font = 'bold 30px Arial';
-    context.fillText(state.status === 'won' ? 'Objectif atteint !' : 'Temps écoulé', WIDTH / 2, 183);
-    context.font = '18px Arial';
-    context.fillText(`${state.score} points · Rejouer pour recommencer`, WIDTH / 2, 220);
-    context.textAlign = 'left';
-  }
-}
-
-export function mountGame(canvas, onState = () => {}, render = null) {
-  const context = render ? null : canvas.getContext('2d');
+export function mountGame(canvas, onState = () => {}) {
+  const renderer = new THREE.WebGLRenderer({canvas});
+  renderer.setSize(canvas.width, canvas.height, false);
+  const scene = createRoom();
+  const camera = new THREE.PerspectiveCamera(75, canvas.width / canvas.height, 0.05, 40);
+  camera.rotation.order = 'YXZ';
+  const controls = new PointerLockControls(camera, canvas);
+  const keyboard = bindKeyboard(canvas);
   let state = newGame();
   let previous = null;
-  let frameId;
-  let paused = false;
-  let fireQueued = false;
-  let lastStatus = '';
-  const input = {left: false, right: false, fire: false};
-  const keyboard = {left: false, right: false, fire: false};
-  const keys = {ArrowLeft: 'left', ArrowRight: 'right', ' ': 'fire'};
-  const paint = render || (state => draw(context, state));
-  function clearInput() {
-    input.left = input.right = input.fire = false;
-    fireQueued = false;
-    clearKeyboard();
+  camera.position.set(state.player.x, 1.6, state.player.z);
+
+  function locked() {
+    keyboard.clear();
+    previous = null;
+    onState({status: 'playing'});
   }
-  function clearKeyboard() {
-    keyboard.left = keyboard.right = keyboard.fire = false;
+  function unlocked() {
+    keyboard.clear();
+    previous = null;
+    onState({status: 'paused'});
   }
-  function keydown(event) {
-    if (keys[event.key]) {
-      event.preventDefault();
-      keyboard[keys[event.key]] = true;
-      if (event.key === ' ') fireQueued = true;
+  function pointerError() {
+    onState({status: 'paused', error: 'La souris n’a pas pu être capturée. Cliquez sur Entrer pour réessayer.'});
+  }
+  async function resume() {
+    canvas.focus();
+    try {
+      await canvas.requestPointerLock();
+    } catch {
+      pointerError();
     }
   }
-  function keyup(event) {
-    if (keys[event.key]) { event.preventDefault(); keyboard[keys[event.key]] = false; }
+  function pause() {
+    keyboard.clear();
+    previous = null;
+    if (controls.isLocked) controls.unlock();
   }
-  function blur() { clearInput(); paused = true; previous = null; }
-  function frame(now) {
-    const dt = previous === null ? 0 : (now - previous) / 1000;
+  function visibility() {
+    if (document.hidden) pause();
+  }
+
+  controls.addEventListener('lock', locked);
+  controls.addEventListener('unlock', unlocked);
+  canvas.addEventListener('click', resume);
+  window.addEventListener('blur', pause);
+  document.addEventListener('visibilitychange', visibility);
+  document.addEventListener('pointerlockerror', pointerError);
+  onState({status: 'paused'});
+
+  renderer.setAnimationLoop(now => {
+    const seconds = previous === null ? 0 : (now - previous) / 1000;
     previous = now;
-    if (!paused) {
-      state = advance(state, {
-        left: input.left || keyboard.left,
-        right: input.right || keyboard.right,
-        fire: input.fire || keyboard.fire || fireQueued,
-      }, dt);
-      fireQueued = false;
+    if (controls.isLocked) {
+      state = advance(state, {...keyboard.read(), angle: camera.rotation.y}, seconds);
+      camera.position.set(state.player.x, 1.6, state.player.z);
     }
-    paint(state);
-    if (state.status !== lastStatus) {
-      lastStatus = state.status;
-      onState({...state});
-    }
-    frameId = requestAnimationFrame(frame);
-  }
-  canvas.addEventListener('keydown', keydown);
-  canvas.addEventListener('keyup', keyup);
-  canvas.addEventListener('blur', clearKeyboard);
-  window.addEventListener('blur', blur);
-  frameId = requestAnimationFrame(frame);
+    renderer.render(scene, camera);
+  });
+
   return {
-    setInput(key, value) {
-      input[key] = value;
-      if (key === 'fire' && value) fireQueued = true;
+    pause,
+    resume,
+    restart() {
+      pause();
+      state = newGame();
+      camera.position.set(state.player.x, 1.6, state.player.z);
+      camera.rotation.set(0, 0, 0);
+      onState({status: 'paused'});
     },
-    pause() { paused = true; clearInput(); },
-    resume() { paused = false; previous = null; canvas.focus(); },
-    restart() { state = newGame(); lastStatus = ''; clearInput(); paused = false; previous = null; canvas.focus(); },
     destroy() {
-      cancelAnimationFrame(frameId);
-      canvas.removeEventListener('keydown', keydown);
-      canvas.removeEventListener('keyup', keyup);
-      canvas.removeEventListener('blur', clearKeyboard);
-      window.removeEventListener('blur', blur);
+      renderer.setAnimationLoop(null);
+      controls.removeEventListener('lock', locked);
+      controls.removeEventListener('unlock', unlocked);
+      if (controls.isLocked) controls.unlock();
+      controls.dispose();
+      keyboard.destroy();
+      canvas.removeEventListener('click', resume);
+      window.removeEventListener('blur', pause);
+      document.removeEventListener('visibilitychange', visibility);
+      document.removeEventListener('pointerlockerror', pointerError);
+      for (const object of scene.children) {
+        object.geometry.dispose();
+        object.material.dispose();
+      }
+      renderer.dispose();
     },
   };
 }

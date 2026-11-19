@@ -10,14 +10,18 @@ const request = createApi(apiUrl);
 function App() {
   const canvas = useRef(null);
   const game = useRef(null);
-  const [state, setState] = useState(null);
+  const [state, setState] = useState({status: 'paused'});
   const [scores, setScores] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    game.current = mountGame(canvas.current, setState);
-    return () => { game.current.destroy(); game.current = null; };
+    try {
+      game.current = mountGame(canvas.current, setState);
+    } catch {
+      setState({status: 'unavailable', error: 'L’affichage 3D est indisponible. Essayez un navigateur avec WebGL 2 activé.'});
+    }
+    return () => { game.current?.destroy(); game.current = null; };
   }, []);
 
   async function loadScores(signal) {
@@ -39,30 +43,22 @@ function App() {
     return () => controller.abort();
   }, []);
 
-  function restart() {
-    setError('');
-    game.current.restart();
-  }
-
-  const finished = state && state.status !== 'playing';
+  const playing = state.status === 'playing';
+  const unavailable = state.status === 'unavailable';
   return <main>
-    <p className="eyebrow">ECM · MON PROJET ECM</p>
-    <h1>Six cibles. Une partie.</h1>
-    <p>30 secondes. Flèches pour bouger, espace pour tirer. Cliquez dans le jeu pour activer le clavier.</p>
+    <p className="eyebrow">DOOM WEB · SPRINT 1</p>
+    <h1>Une pièce. Quatre murs.</h1>
+    <p id="commands">ZQSD, WASD ou les flèches pour marcher. Souris pour regarder. Échap pour libérer la souris et mettre en pause.</p>
     <div className="game-layout"><section aria-label="Le jeu">
-      <canvas ref={canvas} width="640" height="400" tabIndex="0" aria-label="Jeu de tir : flèches gauche et droite, espace pour tirer." />
+      <canvas ref={canvas} width="640" height="400" tabIndex="0" aria-label="Pièce en vue à la première personne. Cliquez pour entrer." aria-describedby="commands" />
       <div className="controls">
-        {['left', 'fire', 'right'].map((key, i) => <button key={key}
-          onPointerDown={event => {event.currentTarget.setPointerCapture(event.pointerId); game.current.setInput(key, true);}}
-          onPointerUp={() => game.current.setInput(key, false)} onPointerCancel={() => game.current.setInput(key, false)}>
-          {['← Gauche', 'Tirer', 'Droite →'][i]}</button>)}
-        <button onClick={() => game.current.pause()}>Pause</button>
-        <button onClick={() => game.current.resume()}>Reprendre</button>
-        <button onClick={restart}>Rejouer</button>
+        <button disabled={playing || unavailable} onClick={() => game.current?.resume()}>Entrer dans la pièce</button>
+        <button disabled={!playing} onClick={() => game.current.pause()}>Pause</button>
+        <button disabled={unavailable} onClick={() => game.current.restart()}>Revenir au centre</button>
       </div>
-      <p className="hint">Une perte de focus met le jeu en pause. Reprendre le relance. 10 points par cible, puis un bonus de temps à la victoire.</p>
-      <p role="status">{finished ? `${state.status === 'won' ? 'Victoire' : 'Partie terminée'} : ${state.score} points.` : 'Partie en cours.'}</p>
-
+      <p className="hint">Explorez la pièce : les murs bloquent vos déplacements. Cliquez dans le jeu ou sur Entrer pour capturer la souris.</p>
+      <p role="status">{playing ? 'Exploration en cours.' : unavailable ? 'Affichage 3D indisponible.' : 'En pause — entrez dans la pièce pour explorer.'}</p>
+      {state.error && <p role="alert" className="error">{state.error}</p>}
     </section><aside>
       <div className="list-heading"><h2>Top 10</h2><button className="secondary" disabled={loading} onClick={() => loadScores()}>Recharger</button></div>
       {loading ? <p>Chargement…</p> : scores.length === 0 ? <p>Aucun score pour le moment.</p> : <ol>{scores.map(score => <li key={score.id}><span>{score.player}</span><strong>{score.points}</strong></li>)}</ol>}

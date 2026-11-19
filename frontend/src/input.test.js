@@ -1,44 +1,65 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {mountGame} from './canvas.js';
+import {bindKeyboard} from './input.js';
 
-function environment(t) {
-  const previous = Object.fromEntries(['window', 'requestAnimationFrame', 'cancelAnimationFrame'].map(key => [key, globalThis[key]]));
-  const canvas = new EventTarget();
-  canvas.focus = () => {};
-  let frame;
-  let state;
-  globalThis.window = new EventTarget();
-  globalThis.requestAnimationFrame = callback => {frame = callback; return 1;};
-  globalThis.cancelAnimationFrame = () => {};
-  const game = mountGame(canvas, () => {}, next => {state = next;});
-  t.after(() => {
-    game.destroy();
-    for (const [key, value] of Object.entries(previous)) {
-      if (value === undefined) delete globalThis[key];
-      else globalThis[key] = value;
-    }
-  });
-  return {canvas, game, tick: now => frame(now), state: () => state};
+function key(target, type, code, character = '') {
+  const event = new Event(type, {cancelable: true});
+  Object.assign(event, {code, key: character});
+  target.dispatchEvent(event);
+  return event;
 }
 
-test('a pointer press survives focus leaving the canvas for a control', t => {
-  const {canvas, game, tick, state} = environment(t);
-  tick(0);
-  game.setInput('right', true);
-  canvas.dispatchEvent(new Event('blur'));
-  tick(50);
-  assert.equal(state().player.x, 314);
+test('les touches physiques fonctionnent aussi sur un clavier AZERTY', () => {
+  const canvas = new EventTarget();
+  const keyboard = bindKeyboard(canvas);
+  const event = key(canvas, 'keydown', 'KeyW', 'z');
+
+  assert.equal(keyboard.read().forward, true);
+  assert.equal(event.defaultPrevented, true);
+  keyboard.destroy();
 });
 
-test('a brief fire click between frames still produces one bullet', t => {
-  const {canvas, game, tick, state} = environment(t);
-  tick(0);
-  game.setInput('fire', true);
+test('les flèches et WASD donnent les quatre directions', () => {
+  const canvas = new EventTarget();
+  const keyboard = bindKeyboard(canvas);
+  const directions = {
+    KeyW: 'forward', ArrowUp: 'forward',
+    KeyS: 'backward', ArrowDown: 'backward',
+    KeyA: 'left', ArrowLeft: 'left',
+    KeyD: 'right', ArrowRight: 'right',
+  };
+
+  for (const [code, direction] of Object.entries(directions)) {
+    key(canvas, 'keydown', code);
+    assert.equal(keyboard.read()[direction], true);
+    key(canvas, 'keyup', code);
+    assert.equal(keyboard.read()[direction], false);
+  }
+  keyboard.destroy();
+});
+
+test('relâcher une touche garde son autre raccourci actif', () => {
+  const canvas = new EventTarget();
+  const keyboard = bindKeyboard(canvas);
+  key(canvas, 'keydown', 'KeyW');
+  key(canvas, 'keydown', 'ArrowUp');
+  key(canvas, 'keyup', 'KeyW');
+
+  assert.equal(keyboard.read().forward, true);
+  keyboard.clear();
+  assert.equal(keyboard.read().forward, false);
+  keyboard.destroy();
+});
+
+test('perdre le focus et démonter le jeu ne laissent pas de touche coincée', () => {
+  const canvas = new EventTarget();
+  const keyboard = bindKeyboard(canvas);
+  key(canvas, 'keydown', 'KeyW');
   canvas.dispatchEvent(new Event('blur'));
-  game.setInput('fire', false);
-  tick(16);
-  assert.equal(state().bullets.length, 1);
-  tick(32);
-  assert.equal(state().bullets.length, 1);
+  assert.equal(keyboard.read().forward, false);
+
+  keyboard.destroy();
+  key(canvas, 'keydown', 'KeyD');
+  assert.equal(keyboard.read().right, false);
+  assert.equal(key(canvas, 'keydown', 'Enter').defaultPrevented, false);
 });

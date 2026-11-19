@@ -16,10 +16,11 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 
 compose up -d --wait --wait-timeout 60 --no-build --pull never
-python3 - "http://$(compose port frontend 8080)" <<'PY'
+saved_score=$(python3 - "http://$(compose port frontend 8080)" <<'PY'
 import json
 import re
 import sys
+from datetime import datetime
 from urllib.error import HTTPError
 from urllib.request import HTTPRedirectHandler, Request, build_opener, urlopen
 
@@ -33,6 +34,25 @@ with urlopen(base + asset, timeout=10) as response:
 assert 'localhost:8001' not in bundle, "Le build utilise encore l'API locale"
 with urlopen(base + '/api/scores/', timeout=10) as response:
     assert json.load(response) == [], "Le proxy /api ne renvoie pas le classement JSON"
+request = Request(base + '/api/scores/', data=json.dumps({
+    'player': 'Docker smoke', 'points': 42,
+}).encode(), headers={'Content-Type': 'application/json'}, method='POST')
+with urlopen(request, timeout=10) as response:
+    assert response.status == 201
+    saved = json.load(response)
+assert set(saved) == {'id', 'player', 'points', 'created_at'}
+assert type(saved['id']) is int and saved['id'] > 0
+assert saved['player'] == 'Docker smoke' and saved['points'] == 42
+assert datetime.fromisoformat(saved['created_at']).tzinfo is not None
+try:
+    urlopen(Request(base + '/api/scores/', data=json.dumps({
+        'player': 'Invalid', 'points': -1,
+    }).encode(), headers={'Content-Type': 'application/json'}, method='POST'), timeout=10)
+    raise AssertionError("Un score invalide doit être refusé")
+except HTTPError as error:
+    assert error.code == 422
+with urlopen(base + '/api/scores/', timeout=10) as response:
+    assert json.load(response) == [saved], "Le score valide manque ou le score invalide a été enregistré"
 try:
     urlopen(base + '/api/absent', timeout=10)
     raise AssertionError("Une route API inexistante doit renvoyer 404")
@@ -53,31 +73,26 @@ try:
 except HTTPError as error:
     assert error.code == 307
     assert error.headers['Location'] == 'https://game.example.test/api/scores/'
+print(json.dumps(saved))
 PY
+)
 
 compose exec -T backend /app/.venv/bin/python - <<'PY'
 import os
-import sqlite3
-from datetime import datetime, timezone
 
 assert os.getuid() != 0, "Le backend doit fonctionner sans root"
-with sqlite3.connect('/app/instance/scores.sqlite') as database:
-    database.execute(
-        'INSERT INTO score (player, points, created_at) VALUES (?, ?, ?)',
-        ('Docker smoke', 42, datetime.now(timezone.utc).isoformat()),
-    )
 PY
 
 # Recreate containers while retaining this test's isolated database volume.
 compose down
 compose up -d --wait --wait-timeout 60 --no-build --pull never
-python3 - "http://$(compose port frontend 8080)/api/scores/" <<'PY'
+python3 - "http://$(compose port frontend 8080)/api/scores/" "$saved_score" <<'PY'
 import json
 import sys
 from urllib.request import urlopen
 
 with urlopen(sys.argv[1], timeout=10) as response:
     rows = json.load(response)
-assert len(rows) == 1 and rows[0]['player'] == 'Docker smoke' and rows[0]['points'] == 42
-print('Containers OK: React, /api, HTTPS redirects and persistent SQLite.')
+assert rows == [json.loads(sys.argv[2])], "Le score HTTP n’a pas survécu à la recréation des conteneurs"
+print('Containers OK: React, score POST/GET, validation, HTTPS redirects and persistent SQLite.')
 PY

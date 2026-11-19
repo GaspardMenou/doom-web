@@ -1,6 +1,6 @@
 # Doom Web
 
-Projet de FPS rétro inspiré du premier Doom : React pour l'interface, Three.js dans un Canvas pour le jeu, FastAPI + SQLAlchemy pour les scores. Les quatre premiers sprints permettent d'explorer un petit niveau 3D, tirer, survivre à un ennemi et atteindre la sortie pour gagner.
+Projet de FPS rétro inspiré du premier Doom : React pour l'interface, Three.js dans un Canvas pour le jeu, FastAPI + SQLAlchemy pour les scores. Les cinq premiers sprints permettent d'explorer un petit niveau 3D, tirer, survivre à un ennemi, atteindre la sortie et enregistrer son résultat dans le classement.
 
 ## Première version convenue
 
@@ -12,13 +12,13 @@ Projet de FPS rétro inspiré du premier Doom : React pour l'interface, Three.js
 
 ## Socle fourni
 
-Le backend sait lire un classement vide. **L'enregistrement n'est pas encore implémenté** : il sera terminé au sprint consacré aux résultats. Les consignes de départ sont conservées ci-dessous.
+Le backend fourni savait lire un classement vide. Le sprint 5 ajoute l'enregistrement et la relecture des scores dans SQLite. Les consignes de départ sont conservées ci-dessous avec les étapes réalisées.
 
 ## Lancer
 
-Dans `backend/` : `uv sync --locked`, `uv run pytest -q` (1 passed), puis `uv run uvicorn scores:create_app --factory --reload --port 8001`.
+Dans `backend/` : `uv sync --locked`, `uv run pytest -q` (21 tests), puis `uv run uvicorn scores:create_app --factory --reload --port 8001`.
 
-Dans `frontend/` : `npm ci`, `npm test` (71 tests), puis `npm run dev`. Ouvrir `http://127.0.0.1:5175`. Chaque terminal reste dans son dossier.
+Dans `frontend/` : `npm ci`, `npm test` (74 tests), puis `npm run dev`. Ouvrir `http://127.0.0.1:5175`. Chaque terminal reste dans son dossier.
 
 ## Sprint 1 : comprendre dans l'ordre
 
@@ -97,7 +97,32 @@ Les tests du niveau et de la victoire ont été observés en échec avant leur i
 
 Limites de ce sprint : niveau fixe, trajet ennemi sur une grille d'un mètre, un seul ennemi et contact non solide. Pas encore de sauvegarde de résultat ; elle vient dans le sprint consacré au backend.
 
+## Sprint 5 : enregistrer son résultat
+
+Après une victoire ou une défaite, le joueur peut saisir un pseudo et enregistrer son score. Le Top 10 se recharge après l'enregistrement. Recharger la page ou redémarrer le backend conserve les résultats dans SQLite.
+
+1. **Calculer les points.** Commencer par le premier test de `frontend/src/score.test.js`, puis les trois lignes de `score.js`. Une victoire rapporte 60 points + 10 par PV restant : 70, 80 ou 90 points. Une défaite vaut 0. La limite existante de l'API, de 0 à 90, reste inchangée.
+2. **Envoyer et relire un score.** Dans `backend/tests/test_scores.py`, lire `test_post_score_then_read_leaderboard`. Il envoie un pseudo et 80 points, attend une réponse 201, puis relit le classement. La route POST dans `backend/scores/__init__.py` crée un `Score`, l'ajoute à la session, valide l'écriture avec `commit()`, recharge les champs générés avec `refresh()`, puis renvoie le résultat.
+3. **Refuser les données invalides.** `ScoreCreate` conserve la validation fournie : pseudo nettoyé de 1 à 24 caractères, points entiers de 0 à 90 et aucun champ supplémentaire. Les tests vérifient qu'un rejet 422 n'écrit rien, les valeurs limites, le Top 10 trié par points décroissants puis ancienneté, et la persistance après recréation de l'application.
+4. **Brancher le formulaire.** `frontend/src/ScoreForm.jsx` contient le pseudo, l'envoi et les états en cours/enregistré/erreur. `jsonBody()` de `api.js` prépare le POST. Le verrou `locked.current` est posé avant l'envoi pour bloquer deux soumissions simultanées. Une erreur conserve le pseudo et permet de réessayer ; un succès termine l'envoi pour cette partie.
+5. **Actualiser le classement.** `main.jsx` affiche le formulaire seulement à la fin, puis relit le Top 10 après un succès. Un échec de cette lecture affiche une erreur tout en conservant « Score enregistré ». Une nouvelle lecture annule la précédente pour empêcher un ancien classement de remplacer le plus récent. Recommencer retire le formulaire ; celui de la partie suivante commence à zéro.
+
+Pour lire un premier test à la fois :
+
+```sh
+# Depuis frontend/
+node --test --test-name-pattern='atteindre la sortie avec trois' src/score.test.js
+# Depuis backend/
+uv run pytest -q tests/test_scores.py::test_post_score_then_read_leaderboard
+```
+
+Le test POST a échoué avec 405 avant l'ajout de la route. Le test du calcul a échoué avant la création de `score.js`, et le contrôle navigateur a constaté l'absence du champ Pseudo après une victoire avant l'ajout du formulaire. Vérification : 74 tests front, 21 tests back et build validés. Le contrôle navigateur utilise une base temporaire isolée et couvre victoire à 90 points, défaite à 0, pseudo blanc, double soumission, erreur puis nouvel essai, échec de lecture après sauvegarde, redémarrage pendant un POST et formulaire neuf à la partie suivante. La capture de la souris et les erreurs HTTP sont simulées ; les sauvegardes réussies utilisent le vrai backend. Le formulaire a été vérifié sur ordinateur et écran de 390 px, sans débordement. L'utilisateur a confirmé l'enregistrement et la relecture du classement après rechargement de la page.
+
+Limites : classement de démonstration sans comptes, avec scores déclarés par le client. Si le serveur enregistre un POST mais que sa réponse réseau est perdue, un nouvel essai peut créer un doublon ; une clé d'idempotence sera nécessaire pour garantir l'unicité dans ce cas.
+
 ## Premier trajet complet
+
+Ce parcours est réalisé au sprint 5 ; les étapes ci-dessous restent le guide de lecture du raccordement front/back.
 
 1. Dans `backend/tests/test_scores.py`, écrire un test : POST un score, vérifier 201, puis GET et vérifier les données. Constater son échec.
 2. Dans `backend/scores/__init__.py`, ajouter le POST en utilisant le schema et le modèle fournis. Faire passer le test, puis tester un score invalide sans écriture.
@@ -115,7 +140,7 @@ Le dossier `game-reference` montre un résultat complet. Vous pouvez le lire, ma
 
 ## Images Docker et CI
 
-La CI GitHub Actions lance les tests front et back, construit les deux images Linux AMD64, puis vérifie ensemble le front, le proxy `/api`, les redirections HTTPS et la persistance SQLite après recréation des conteneurs. Elle publie les images sur GHCR seulement si ces étapes passent, lors d'un push sur `main` ou d'un tag `v*`. Les pull requests vérifient les images sans les publier.
+La CI GitHub Actions lance les tests front et back, construit les deux images Linux AMD64, puis vérifie ensemble le front, le proxy `/api`, un POST de score suivi d'un GET, le rejet d'un score invalide, les redirections HTTPS et la persistance du résultat après recréation des conteneurs. Elle publie les images sur GHCR seulement si ces étapes passent, lors d'un push sur `main` ou d'un tag `v*`. Les pull requests vérifient les images sans les publier.
 
 - `ghcr.io/gaspardmenou/doom-web-frontend:latest`
 - `ghcr.io/gaspardmenou/doom-web-backend:latest`

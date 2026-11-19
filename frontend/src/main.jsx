@@ -3,6 +3,8 @@ import {createRoot} from 'react-dom/client';
 import {mountGame} from './canvas.js';
 import {createApi} from './api.js';
 import {PLAYER_MAX_HEALTH} from './game.js';
+import {scorePoints} from './score.js';
+import {ScoreForm} from './ScoreForm.jsx';
 import './style.css';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8001';
@@ -11,6 +13,7 @@ const request = createApi(apiUrl);
 function App() {
   const canvas = useRef(null);
   const game = useRef(null);
+  const scoresRequest = useRef(null);
   const [state, setState] = useState({status: 'paused'});
   const [scores, setScores] = useState([]);
   const [error, setError] = useState('');
@@ -25,23 +28,25 @@ function App() {
     return () => { game.current?.destroy(); game.current = null; };
   }, []);
 
-  async function loadScores(signal) {
+  async function loadScores() {
+    scoresRequest.current?.abort();
+    const controller = new AbortController();
+    scoresRequest.current = controller;
     setLoading(true);
     try {
-      const rows = await request('/scores/', {signal});
+      const rows = await request('/scores/', {signal: controller.signal});
       setScores(rows);
       setError('');
     } catch (error) {
       if (error.name !== 'AbortError') setError(error.message);
     } finally {
-      if (!signal?.aborted) setLoading(false);
+      if (!controller.signal.aborted) setLoading(false);
     }
   }
 
   useEffect(() => {
-    const controller = new AbortController();
-    loadScores(controller.signal);
-    return () => controller.abort();
+    loadScores();
+    return () => scoresRequest.current?.abort();
   }, []);
 
   const playing = state.status === 'playing';
@@ -50,7 +55,7 @@ function App() {
   const unavailable = state.status === 'unavailable';
   const playerHealth = state.playerHealth ?? PLAYER_MAX_HEALTH;
   return <main>
-    <h1>Sprint 4 : exploration et sortie.</h1>
+    <h1>Sprint 5 : enregistrer son résultat.</h1>
     <p id="commands">ZQSD, WASD ou les flèches pour marcher. Souris pour viser. Clic gauche ou Espace pour tirer. Échap pour mettre en pause.</p>
     <div className="game-layout"><section aria-label="Le jeu">
       <div className="viewport">
@@ -70,6 +75,7 @@ function App() {
       <p role="status">{won ? 'Victoire — vous avez atteint la sortie !' : lost ? 'Défaite — vous n’avez plus de vie. Cliquez sur Recommencer.' : playing ? 'Partie en cours.' : unavailable ? 'Affichage 3D indisponible.' : 'En pause — entrez dans la pièce pour reprendre.'}</p>
       {!unavailable && <p role="status">{state.targetHealth === 0 ? 'Ennemi vaincu !' : `Ennemi : ${state.targetHealth ?? '…'} PV.`} {state.lastShot}</p>}
       {state.error && <p role="alert" className="error">{state.error}</p>}
+      {(won || lost) && <ScoreForm points={scorePoints(state)} request={request} onSaved={loadScores} />}
     </section><aside>
       <div className="list-heading"><h2>Top 10</h2><button className="secondary" disabled={loading} onClick={() => loadScores()}>Recharger</button></div>
       {loading ? <p>Chargement…</p> : scores.length === 0 ? <p>Aucun score pour le moment.</p> : <ol>{scores.map(score => <li key={score.id}><span>{score.player}</span><strong>{score.points}</strong></li>)}</ol>}

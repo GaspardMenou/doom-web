@@ -121,3 +121,33 @@ Le même domaine sert le jeu et `/api/` : aucune Custom Location ni sous-domaine
 Si NPMplus est déplacé sur le même serveur en `network_mode: host`, laisser `FRONTEND_HOST=127.0.0.1` et cibler `127.0.0.1:8080`. Sur ce même serveur avec un réseau bridge, l'attacher durablement au réseau externe `doom-web_default` dans son propre Compose, puis cibler `doom-web-frontend:8080`. Ce partage de réseau Docker ne s'applique pas à deux machines distinctes.
 
 Pour mettre à jour, répéter `docker compose pull` puis `docker compose up -d --no-build --wait --force-recreate`. Pour fixer une version ou revenir à une version précédente, définir `IMAGE_TAG=v0.1.0` ou `IMAGE_TAG=sha-<commit complet>` dans le fichier `.env` local, puis relancer ces commandes ; les deux services utilisent le même tag. La CI publie les images, le déploiement sur le serveur reste manuel.
+
+## Initialiser la base dans Docker
+
+Exécuter les commandes depuis le dossier du même `compose.yaml` et avec le même `.env` que le déploiement, après connexion à GHCR.
+
+La base SQLite et la table `score` sont créées automatiquement au démarrage du backend par `create_app()`. Pour les initialiser, démarrer le backend suffit :
+
+```sh
+docker compose pull backend
+docker compose up -d --no-build --wait backend
+```
+
+Pour créer la base et les tables manquantes **sans démarrer l'API**, cette commande utilise le même volume :
+
+```sh
+docker compose run --rm --no-deps backend /app/.venv/bin/python -c \
+  "from scores import create_app; app = create_app(); app.state.engine.dispose(); print('Base initialisée.')"
+```
+
+`--rm` supprime le conteneur temporaire après la commande ; le volume de base de données est conservé. Une nouvelle exécution conserve les scores existants. Le fichier se trouve dans `/app/instance/scores.sqlite`, stocké dans le volume `doom-web_scores` avec le nom de projet par défaut. Cette initialisation crée les tables manquantes ; elle ne modifie pas le schéma des tables existantes.
+
+Une fois le backend démarré, vérifier son état et lire le classement :
+
+```sh
+docker compose ps backend
+docker compose exec backend /app/.venv/bin/python -c \
+  "from urllib.request import urlopen; print(urlopen('http://127.0.0.1:8001/scores/').read().decode())"
+```
+
+Une base vide renvoie `[]` ; sinon, les scores déjà présents sont affichés. Cette vérification utilise l'API interne au conteneur, sans passer par NPMplus.

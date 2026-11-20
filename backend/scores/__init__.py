@@ -1,10 +1,11 @@
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Literal
+from json import JSONDecodeError
 
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import AliasPath, BaseModel, ConfigDict, Field, StringConstraints
+from pydantic import AliasPath, BaseModel, ConfigDict, Field, StringConstraints, ValidationError
 from sqlalchemy import ForeignKey, create_engine, select
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, relationship
 
@@ -28,6 +29,10 @@ class Score(Base):
     points: Mapped[int]
     created_at: Mapped[str] = mapped_column(default=lambda: datetime.now(timezone.utc).isoformat())
 
+class GameEvent(BaseModel):
+    type: Literal["death", "victory"]
+    player: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=24, strict=True)]
+    
 
 class ScoreCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -70,6 +75,29 @@ def create_app(database_url=None):
             yield session
 
     DatabaseSession = Annotated[Session, Depends(get_session)]
+    
+    clients: set[WebSocket] = set()
+    
+    @app.websocket("/ws/events")
+    async def event(websocket: WebSocket):
+        await websocket.accept()
+        clients.add(websocket)
+        try:
+            while True:
+                event = GameEvent.model_validate(
+                    await websocket.receive_json()
+                )
+                for client in tuple(clients):
+                    try :
+                        await client.send_json(event.model_dump())
+                    except (WebSocketDisconnect, RuntimeError):
+                        clients.discard(client)
+        except (ValidationError, JSONDecodeError):
+            await websocket.close(code=1008, reason="Invalid event")
+        except WebSocketDisconnect:
+            pass
+        finally:
+            clients.discard(websocket)
 
     @app.get("/scores/", response_model=list[ScoreRead])
     def list_scores(session: DatabaseSession):

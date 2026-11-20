@@ -1,6 +1,8 @@
 import pytest
 from fastapi.testclient import TestClient
 from scores import create_app
+from fastapi.websockets import WebSocket
+
 
 
 @pytest.fixture
@@ -144,3 +146,27 @@ def test_multiple_players_stats(client):
     assert bob_stats["total_points"] == 70
     assert bob_stats["games_played"] == 1
     assert bob_stats["average_points"] == 70.0
+    
+def test_player_name_is_trimmed(client):
+    response = client.post("/scores/", json={"player": "  Ada  ", "points": 80})
+    assert response.status_code == 201
+    response = client.post("/scores/", json={"player": "Ada", "points": 90})
+    assert response.status_code == 201
+    
+    response = client.get("/players/")
+    assert response.status_code == 200
+    players = response.json()
+    
+    assert len(players) == 1
+    
+def test_websocket_event_broadcast(client):
+    with client.websocket_connect("/ws/events") as websocket1, client.websocket_connect("/ws/events") as websocket2:
+        event_data = {"type": "victory", "player": "Ada"}
+        websocket1.send_json(event_data)
+        
+        received_event1 = websocket1.receive_json()
+        received_event2 = websocket2.receive_json()
+        
+        assert received_event1 == event_data
+        assert received_event2 == event_data
+    

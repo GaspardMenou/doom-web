@@ -122,7 +122,7 @@ function App() {
     {home && <div className="home-content">
       <section className="home-grid" aria-label="Accueil">
         <div className="mission-intro">
-          <h1>Doom <span>Web</span></h1>
+          <h1>Do<span className="title-right">om</span>{' '}<span className="title-web">W<span className="title-right">eb</span></span></h1>
           <h2>Courez. Ripostez. Trouvez le sas.</h2>
           <p>Trois grands secteurs, jusqu’à 96 mètres de côté. Traqueurs, colosses et sentinelles occupent les passages. Chaque mission redistribue les rencontres et les soins.</p>
           <button className="primary play-button" autoFocus disabled={unavailable} onClick={() => start()}>Jouer <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg></button>

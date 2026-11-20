@@ -23,11 +23,13 @@ colors:
   error-ink: "#ffdbd1"
 typography:
   display:
-    fontFamily: '"Barlow Condensed", sans-serif'
+    fontFamily: 'AmazDooM, "Barlow Condensed", sans-serif'
     fontSize: "clamp(80px, 10vw, 148px)"
-    fontWeight: 800
+    fontWeight: 400
     lineHeight: 0.8
-    letterSpacing: "-0.025em"
+    letterSpacing: "0"
+  display-right:
+    fontFamily: '"AmazDooM Right", AmazDooM, "Barlow Condensed", sans-serif'
   headline:
     fontFamily: '"Barlow Condensed", sans-serif'
     fontSize: "clamp(26px, 2.6vw, 36px)"
@@ -134,7 +136,7 @@ Les images du couloir et du pistolet sont des créations originales générées,
 **Key Characteristics:**
 
 - Acier olive et graphite, accents rouge braise, réussite et sortie vertes.
-- Titres Barlow Condensed lourds ; texte courant Barlow lisible.
+- Titre d’accueil AmazDooM ; autres titres Barlow Condensed lourds ; texte courant Barlow lisible.
 - Angles droits, filets et biseaux sombres, profondeur industrielle.
 - Canvas pleine fenêtre, HUD bas et menus superposés.
 - Art pixelisé original ; focus clavier visible et mouvement réduit respecté.
@@ -172,15 +174,15 @@ La palette associe des neutres olive et graphite à une braise rouge, avec un ve
 
 ## Typography
 
-**Display Font:** Barlow Condensed, avec sans-serif de secours.
+**Display Font:** AmazDooM (variantes pleines Left2 et Right2) pour le titre d’accueil, avec Barlow Condensed et sans-serif de secours. La variante gauche compose « DO » et « W », la droite « OM » et « EB », pour donner une perspective symétrique à chaque mot. Barlow Condensed reste la police des autres titres.
 
 **Body Font:** Barlow, avec sans-serif de secours.
 
-Les polices sont auto-hébergées dans `frontend/public/fonts/`, avec les licences OFL. Barlow Condensed extra-gras structure les titres, les boutons d’action et les compteurs. Barlow régulier et semi-gras assurent la lecture des consignes, des commandes, du classement et du formulaire. Aucun alphabet pixelisé n’est appliqué au texte de l’interface.
+Les polices sont auto-hébergées dans `frontend/public/fonts/`. AmazDooM, fournie par l’utilisateur dans `AmazDooMLeft2.ttf` et `AmazDooMRight2.ttf` et intégrée sous `amazdoom-left2.ttf` et `amazdoom-right2.ttf`, est réservée au titre « Doom Web ». Les deux familles Barlow conservent leurs licences OFL. Barlow Condensed extra-gras structure les autres titres, les boutons d’action et les compteurs. Barlow régulier et semi-gras assurent la lecture des consignes, des commandes, du classement et du formulaire. Aucun alphabet pixelisé n’est appliqué au texte de l’interface.
 
 ### Hierarchy
 
-- **Display** : titre d’accueil en capitales ; sa taille fluide, son interlettrage serré et son interligne compact sont les tokens `display`.
+- **Display** : titre d’accueil en capitales AmazDooM, graisse régulière et interlettrage naturel ; sa taille fluide et son interligne compact sont les tokens `display`.
 - **Headline** : phrase de mission en capitales ; le titre des menus a une taille fluide distincte (`clamp(46px, 6vw, 72px)`).
 - **Title** : titre du classement ; le titre du plan utilise une taille légèrement inférieure (22px).
 - **Body** : texte de mission limité à 39ch ; il passe à 17px sous le seuil de 900px. Les paragraphes des menus utilisent aussi 17px, avec un interligne de 1.5.

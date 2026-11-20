@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-19T16:01:34+00:00",
+  "generatedAt": "2026-11-20T09:54:44+00:00",
   "title": "Design System: Doom Web",
   "extensions": {
     "colorMeta": {
@@ -293,7 +293,11 @@
     "typographyMeta": {
       "display": {
         "displayName": "Display",
-        "purpose": "frontend/src/style.css — h1; titre d’accueil, avec un override mobile sous 640px."
+        "purpose": "frontend/src/style.css — h1; moitié gauche AmazDooM du titre d’accueil, avec un override mobile sous 640px."
+      },
+      "display-right": {
+        "displayName": "Display right",
+        "purpose": "frontend/src/style.css — h1 .title-right; moitié droite AmazDooM, raccordée à la gauche dans chaque mot du titre."
       },
       "headline": {
         "displayName": "Headline",

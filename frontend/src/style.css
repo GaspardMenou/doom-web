@@ -16,6 +16,18 @@
   font-weight: 800;
   font-display: swap;
 }
+@font-face {
+  font-family: AmazDooM;
+  src: url(/fonts/amazdoom-left2.ttf) format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "AmazDooM Right";
+  src: url(/fonts/amazdoom-right2.ttf) format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}
 :root {
   font-family: Barlow, sans-serif;
   color: #e9e3d4;
@@ -169,9 +181,9 @@ p {
   margin-top: 0;
 }
 h1 {
-  font: 800 clamp(80px, 10vw, 148px)/.8 "Barlow Condensed", sans-serif;
+  font: 400 clamp(80px, 10vw, 148px)/.8 AmazDooM, "Barlow Condensed", sans-serif;
   text-transform: uppercase;
-  letter-spacing: -.025em;
+  letter-spacing: 0;
   margin: 0 0 32px -4px;
   color: #e4dcc8;
   text-shadow:
@@ -179,7 +191,10 @@ h1 {
     4px 8px 1px #2d2820,
     0 14px 24px #050705a0;
 }
-h1 span {
+h1 .title-right {
+  font-family: "AmazDooM Right", AmazDooM, "Barlow Condensed", sans-serif;
+}
+h1 .title-web {
   color: #df6650;
   text-shadow:
     2px 4px 1px #7b2a1f,

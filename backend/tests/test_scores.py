@@ -93,6 +93,16 @@ def test_score_persists_after_app_is_recreated(tmp_path):
     finally:
         second_app.state.engine.dispose()
         
+def test_get_players(client):
+    response = client.get("/players/")
+    assert response.status_code == 200
+    assert response.json() == []
+    response = client.post('/scores/', json={"player": "Ada", "points": 80})
+    assert response.status_code == 201
+    response = client.get("/players/")
+    assert response.status_code == 200
+    assert response.json() == [{"id": 1, "player": "Ada", "total_points": 80, "games_played": 1, "average_points": 80.0}]
+        
 def test_second_score_updates_player_stats(client):
     response = client.post("/scores/", json={"player": "Ada", "points": 80})
     assert response.status_code == 201

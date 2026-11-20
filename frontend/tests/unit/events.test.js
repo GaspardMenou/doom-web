@@ -15,7 +15,6 @@ test('le pseudo retire les espaces extérieurs et accepte de 1 à 24 caractères
 
 test('l’URL WebSocket conserve le préfixe de l’API et choisit ws ou wss', () => {
   for (const [base, page, expected] of [
-    [undefined, PAGE, 'ws://localhost:8001/ws/events'],
     ['http://localhost:8001/', PAGE, 'ws://localhost:8001/ws/events'],
     ['https://api.example.test/v1/api/', PAGE, 'wss://api.example.test/v1/api/ws/events'],
     ['/api', PAGE, 'wss://game.example.test/api/ws/events'],
@@ -24,6 +23,7 @@ test('l’URL WebSocket conserve le préfixe de l’API et choisit ws ou wss', (
     ['api', PAGE, 'wss://game.example.test/play/api/ws/events'],
     ['//api.example.test/base', PAGE, 'wss://api.example.test/base/ws/events'],
   ]) assert.equal(eventsUrl(base, page), expected);
+  assert.throws(() => eventsUrl(undefined, PAGE));
   assert.throws(() => eventsUrl('file:///api', PAGE));
 });
 

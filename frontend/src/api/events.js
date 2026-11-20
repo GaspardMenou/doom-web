@@ -4,7 +4,8 @@ export function normalizePlayerName(value) {
   return name;
 }
 
-export function eventsUrl(apiUrl = 'http://localhost:8001', pageUrl = globalThis.location?.href) {
+export function eventsUrl(apiUrl, pageUrl = globalThis.location?.href) {
+  if (typeof apiUrl !== 'string' || !apiUrl) throw new Error('URL API manquante.');
   const url = new URL(apiUrl, pageUrl);
   if (!['http:', 'https:', 'ws:', 'wss:'].includes(url.protocol)) throw new Error('URL API incompatible avec les WebSockets.');
   url.protocol = ['https:', 'wss:'].includes(url.protocol) ? 'wss:' : 'ws:';

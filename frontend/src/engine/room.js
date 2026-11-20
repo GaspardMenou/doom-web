@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import {LEVELS} from './levels/index.js';
+import {LEVELS} from '../game/levels/index.js';
 import {createTexture} from './textures.js';
-import {ENEMY_TYPES} from './enemyTypes.js';
+import {ENEMY_TYPES} from '../game/enemyTypes.js';
 
 export function createRoom(level = LEVELS[0], loadTexture) {
   const scene = new THREE.Scene();

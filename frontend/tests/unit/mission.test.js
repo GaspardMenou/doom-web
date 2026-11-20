@@ -1,13 +1,21 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {populateLevel} from './mission.js';
-import {canStand} from './level.js';
-import {LEVELS} from './levels/index.js';
-import {ENEMY_TYPES} from './enemyTypes.js';
+import {populateLevel} from '../../src/game/mission.js';
+import {canStand} from '../../src/game/level.js';
+import {LEVELS} from '../../src/game/levels/index.js';
+import {ENEMY_TYPES} from '../../src/game/enemyTypes.js';
 
-const level = {size: 64, spawn: {x: 0, z: 28}, walls: [{x: 0, z: 0, width: 12, depth: 1}],
+const level = {
+  size: 64, 
+  spawn: {x: 0, z: 28}, 
+  walls: [{
+    x: 0, 
+    z: 0, 
+    width: 12, 
+    depth: 1}],
   enemies: [{id: 'a', type: 'guard', x: -20, z: -20}, {id: 'b', type: 'brute', x: 20, z: -20}],
-  medkits: [{id: 'h', x: 20, z: 20}], exit: {x: 28, z: -28, width: 3, depth: 3}};
+  medkits: [{id: 'h', x: 20, z: 20}], exit: {x: 28, z: -28, width: 3, depth: 3}
+};
 
 test('une graine reproduit le placement et une autre renouvelle les rencontres sans changer le plan', () => {
   const before = structuredClone(level);

@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {advance, newGame, shoot} from './game.js';
-import {createEnemy} from './enemy.js';
-import {ARENA} from '../tests/arena.js';
+import {advance, newGame, shoot} from '../../src/game/game.js';
+import {createEnemy} from '../../src/game/enemy.js';
+import {ARENA} from '../fixtures/arena.js';
 
 function duel() {
   const state = newGame(0, 123);

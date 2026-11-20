@@ -25,19 +25,31 @@ Dans `frontend/` : `npm ci`, `npm test`, puis `npm run dev`. Ouvrir `http://127.
 
 Les sections des sprints 1 à 7 ci-dessous conservent l'historique pédagogique et les validations de chaque étape. La pièce de 10 m, le cube unique, `targetHealth` et `shoot(state, true)` appartiennent à ces anciennes versions. Les tests ont depuis été adaptés ; pour comprendre le fonctionnement actuel, commencer par le sprint 8.
 
+## Organisation du frontend
+
+`frontend/src/main.jsx` reste le point d'entrée, avec `style.css` pour les styles communs. Les scripts sont regroupés par rôle :
+
+- `src/game/` : règles du jeu, ennemis, collisions, missions, projectiles et score ; `src/game/levels/` contient les cartes.
+- `src/engine/` : scène Three.js, rendu, textures, tirs, clavier et plein écran.
+- `src/components/` : composants React du HUD, du plan, du formulaire et des statistiques.
+- `src/api/` : client HTTP et validation des statistiques reçues.
+- `tests/unit/`, `tests/browser/` et `tests/fixtures/` : tests Node, scénarios navigateur et données de test communes.
+
+Les chemins ci-dessus sont relatifs à `frontend/`. `npm test` lance tous les tests unitaires ; les scénarios navigateur restent séparés.
+
 ## Sprint 1 : comprendre dans l'ordre (historique)
 
-1. `frontend/src/game.test.js` : commencer par le premier test, « avancer pendant une seconde déplace le joueur de trois mètres ». Il vérifie une règle sans navigateur ni Three.js.
-2. `frontend/src/game.js` : `newGame()` place le joueur ; `advance()` calcule sa prochaine position. `x` représente gauche/droite, `z` avant/arrière. La vitesse est multipliée par le temps écoulé, pas par le nombre d'images.
+1. `frontend/tests/unit/game.test.js` : commencer par le premier test, « avancer pendant une seconde déplace le joueur de trois mètres ». Il vérifie une règle sans navigateur ni Three.js.
+2. `frontend/src/game/game.js` : `newGame()` place le joueur ; `advance()` calcule sa prochaine position. `x` représente gauche/droite, `z` avant/arrière. La vitesse est multipliée par le temps écoulé, pas par le nombre d'images.
 3. Les tests suivants ajoutaient les directions, le regard, la diagonale et les murs. Au sprint 1, la pièce mesurait 10 mètres ; avec un rayon de 0,25 mètre, le joueur restait entre -4,75 et +4,75. Les dimensions viennent maintenant du niveau courant ; les collisions sont dans `level.js`.
-4. `frontend/src/input.js` et `input.test.js` : les touches physiques WASD correspondent à ZQSD sur AZERTY ; les flèches fonctionnent aussi. Une perte de focus remet les touches à zéro.
-5. `frontend/src/room.js` : le sol quadrillé et les murs colorés, puis la cloison et la sortie ajoutées au sprint 4. `canvas.js` branche la caméra, `PointerLockControls`, les commandes et la boucle d'affichage. Les règles de déplacement restent dans `game.js`.
+4. `frontend/src/engine/input.js` et `input.test.js` : les touches physiques WASD correspondent à ZQSD sur AZERTY ; les flèches fonctionnent aussi. Une perte de focus remet les touches à zéro.
+5. `frontend/src/engine/room.js` : le sol quadrillé et les murs colorés, puis la cloison et la sortie ajoutées au sprint 4. `canvas.js` branche la caméra, `PointerLockControls`, les commandes et la boucle d'affichage. Les règles de déplacement restent dans `game.js`.
 6. `frontend/src/main.jsx` : React monte le jeu dans le Canvas et affiche les boutons. Les positions ne passent pas par un état React à chaque image.
 
 Pour ne lancer que le premier test depuis `frontend/` :
 
 ```sh
-node --test --test-name-pattern='avancer pendant' src/game.test.js
+node --test --test-name-pattern='avancer pendant' tests/unit/game.test.js
 ```
 
 Les tests ont été écrits en échec avant les règles correspondantes. Ils remplacent ceux de l'ancien jeu 2D ; les tests du client API sont conservés. Pour essayer : cliquer sur **Entrer dans la pièce**, marcher avec ZQSD/WASD ou les flèches, regarder avec la souris, puis appuyer sur Échap pour mettre en pause. **Revenir au centre** réinitialise la position et le regard.
@@ -50,12 +62,12 @@ Vérification du sprint : les 17 tests et le build passent, la pièce WebGL s'af
 - La cible commence avec 2 points de vie : elle devient orange après un impact, puis disparaît au second. Un tir manqué ne lui enlève pas de vie ; les murs arrêtent les tirs.
 - Échap et Pause bloquent les tirs. Recommencer restaure la position, le regard et la cible rouge à 2 points de vie. La cible d'entraînement reste traversable.
 
-Au sprint 2, le premier test de `frontend/src/shoot.test.js` appelait `shoot(newGame(), true)` pour enlever un point de vie sans modifier l'état précédent. Depuis le sprint 7, `shoot(state, enemyId)` reçoit l'identifiant du garde touché, car plusieurs gardes sont présents.
+Au sprint 2, le premier test de `frontend/tests/unit/shoot.test.js` appelait `shoot(newGame(), true)` pour enlever un point de vie sans modifier l'état précédent. Depuis le sprint 7, `shoot(state, enemyId)` reçoit l'identifiant du garde touché, car plusieurs gardes sont présents.
 
-`frontend/src/shooting.test.js` teste ensuite la visée avec de vraies géométries Three.js, sans navigateur. `hitsTarget()` dans `shooting.js` lance un rayon depuis le centre de la caméra et prend uniquement le premier impact visible : un mur situé avant la cible bloque le tir. `canvas.js` relie ce résultat aux clics, aux dégâts et à l'affichage.
+`frontend/tests/unit/shooting.test.js` teste ensuite la visée avec de vraies géométries Three.js, sans navigateur. `hitsTarget()` dans `shooting.js` lance un rayon depuis le centre de la caméra et prend uniquement le premier impact visible : un mur situé avant la cible bloque le tir. `canvas.js` relie ce résultat aux clics, aux dégâts et à l'affichage.
 
 ```sh
-node --test src/shoot.test.js
+node --test tests/unit/shoot.test.js
 ```
 
 Les tests de dégâts et de visée ont été lancés en échec avant leur implémentation. Vérification du sprint : 30 tests au vert et build validé ; contrôle navigateur du clic d'entrée, des dégâts, de la destruction, du reset, des tirs manqués et de la pause. Pour ce contrôle automatisé, seule la capture native de la souris est simulée ; la scène Three.js, les tirs et les règles de jeu sont réels. Les commandes souris/clavier natives avaient été confirmées par l'utilisateur au sprint 1.
@@ -70,11 +82,11 @@ Le cube rouge du sprint 2 devient l'ennemi. Dans cet état historique, il garde 
 - Deux impacts tuent l'ennemi : il disparaît, cesse de poursuivre et d'attaquer. Le joueur peut continuer à explorer ; la sortie et la victoire viendront au sprint 4.
 - Recommencer restaure les positions, le regard, les vies et le délai d'attaque.
 
-Pour comprendre, lire `frontend/src/enemy.test.js` dans l'ordre : poursuite, arrêt à portée, attaque, délai entre les coups, puis défaite. `advanceEnemy()` dans `enemy.js` contient ces règles sans Three.js. `game.js` l'appelle après le mouvement du joueur ; `combat.test.js` vérifie ce raccordement, le blocage après défaite et le reset.
+Pour comprendre, lire `frontend/tests/unit/enemy.test.js` dans l'ordre : poursuite, arrêt à portée, attaque, délai entre les coups, puis défaite. `advanceEnemy()` dans `enemy.js` contient ces règles sans Three.js. `game.js` l'appelle après le mouvement du joueur ; `combat.test.js` vérifie ce raccordement, le blocage après défaite et le reset.
 
 ```sh
-node --test src/enemy.test.js
-node --test src/combat.test.js
+node --test tests/unit/enemy.test.js
+node --test tests/unit/combat.test.js
 ```
 
 Les tests ont été observés en échec avant l'implémentation, puis les 47 tests et le build sont passés au vert. Le contrôle navigateur couvre la poursuite visible, la pause, les trois attaques jusqu'à la défaite, le blocage après défaite, le reset complet et l'arrêt des dégâts après la mort de l'ennemi. Seule la capture native de la souris est simulée pendant ce contrôle automatisé. L'utilisateur a également confirmé dans son navigateur que le combat, la défaite, le redémarrage et les deux tirs pour tuer l'ennemi fonctionnent.
@@ -85,18 +97,18 @@ Au sprint 3, la poursuite était directe. Le sprint 4 adapte le trajet aux obsta
 
 Au sprint 4, le niveau était une pièce de 10 m, divisée par une cloison avec un passage à droite. La sortie était le carré vert au sol, dans la partie gauche de la seconde zone. Le joueur et l'ennemi gardaient leurs positions et leurs vies du sprint 3. Ce plan a été remplacé au sprint 7.
 
-1. **Le mur bloque, le passage laisse passer.** Lire le premier test de `frontend/src/level.test.js`, puis `canStand()` dans `level.js`. Les mêmes coordonnées servent à dessiner le mur et à tester les collisions. `moveInLevel()` essaie séparément les deux axes pour permettre de longer un mur.
-2. **Entrer vivant dans la sortie fait gagner.** Commencer par le premier test de `frontend/src/victory.test.js` : le joueur a 1 PV, l'ennemi est vivant, un petit pas le fait entrer dans le carré. `atExit()` vérifie la position ; à la fin de `advance()`, `game.js` passe à `status: 'won'` si le joueur a survécu. Un coup fatal pendant ce même pas donne la défaite.
+1. **Le mur bloque, le passage laisse passer.** Lire le premier test de `frontend/tests/unit/level.test.js`, puis `canStand()` dans `level.js`. Les mêmes coordonnées servent à dessiner le mur et à tester les collisions. `moveInLevel()` essaie séparément les deux axes pour permettre de longer un mur.
+2. **Entrer vivant dans la sortie fait gagner.** Commencer par le premier test de `frontend/tests/unit/victory.test.js` : le joueur a 1 PV, l'ennemi est vivant, un petit pas le fait entrer dans le carré. `atExit()` vérifie la position ; à la fin de `advance()`, `game.js` passe à `status: 'won'` si le joueur a survécu. Un coup fatal pendant ce même pas donne la défaite.
 3. **L'ennemi contourne la cloison.** `path.test.js` puis `path.js` ajoutent une petite recherche en largeur : des cases voisines sont essayées jusqu'à trouver un chemin. `enemy.test.js` vérifie le détour dans les deux sens, les coins et les attaques bloquées par le mur. Ce morceau est plus avancé ; il peut se lire après les deux premières étapes.
 4. **La victoire termine la partie.** `canvas.js` affiche le résultat et libère la souris. Les déplacements, les tirs et la reprise restent bloqués jusqu'à Recommencer, qui rétablit le niveau, les vies et le regard.
 
 Pour commencer par une seule règle depuis `frontend/` :
 
 ```sh
-node --test --test-name-pattern='entrer vivant' src/victory.test.js
+node --test --test-name-pattern='entrer vivant' tests/unit/victory.test.js
 ```
 
-Puis lancer `node --test src/level.test.js src/victory.test.js`, et enfin `npm test`.
+Puis lancer `node --test tests/unit/level.test.js tests/unit/victory.test.js`, et enfin `npm test`.
 
 Les tests du niveau et de la victoire ont été observés en échec avant leur implémentation. Les tests de trajet ont aussi révélé un blocage au coin de la cloison, corrigé avant intégration. Vérification : 71 tests au vert et build validé ; le contrôle navigateur couvre le tir bloqué par la cloison, le trajet complet sans tuer l'ennemi, la victoire avec 3 PV, la libération de la souris, le blocage après victoire et le redémarrage. Seule la capture native de la souris est simulée pour ce contrôle automatisé. L'utilisateur a également confirmé dans son navigateur que la victoire après le passage à droite et le redémarrage fonctionnent.
 
@@ -106,17 +118,17 @@ Limites de ce sprint : niveau fixe, trajet ennemi sur une grille d'un mètre, un
 
 Après une victoire ou une défaite, le joueur peut saisir un pseudo et enregistrer son score. Le Top 10 se recharge après l'enregistrement. Recharger la page ou redémarrer le backend conserve les résultats dans SQLite.
 
-1. **Calculer les points.** Commencer par le premier test de `frontend/src/score.test.js`, puis les trois lignes de `score.js`. Une victoire rapporte 60 points + 10 par PV restant : 70, 80 ou 90 points. Une défaite vaut 0. La limite existante de l'API, de 0 à 90, reste inchangée.
+1. **Calculer les points.** Commencer par le premier test de `frontend/tests/unit/score.test.js`, puis les trois lignes de `score.js`. Une victoire rapporte 60 points + 10 par PV restant : 70, 80 ou 90 points. Une défaite vaut 0. La limite existante de l'API, de 0 à 90, reste inchangée.
 2. **Envoyer et relire un score.** Dans `backend/tests/test_scores.py`, lire `test_post_score_then_read_leaderboard`. Il envoie un pseudo et 80 points, attend une réponse 201, puis relit le classement. La route POST dans `backend/scores/__init__.py` crée un `Score`, l'ajoute à la session, valide l'écriture avec `commit()`, recharge les champs générés avec `refresh()`, puis renvoie le résultat.
 3. **Refuser les données invalides.** `ScoreCreate` conserve la validation fournie : pseudo nettoyé de 1 à 24 caractères, points entiers de 0 à 90 et aucun champ supplémentaire. Les tests vérifient qu'un rejet 422 n'écrit rien, les valeurs limites, le Top 10 trié par points décroissants puis ancienneté, et la persistance après recréation de l'application.
-4. **Brancher le formulaire.** `frontend/src/ScoreForm.jsx` contient le pseudo, l'envoi et les états en cours/enregistré/erreur. `jsonBody()` de `api.js` prépare le POST. Le verrou `locked.current` est posé avant l'envoi pour bloquer deux soumissions simultanées. Une erreur conserve le pseudo et permet de réessayer ; un succès termine l'envoi pour cette partie.
+4. **Brancher le formulaire.** `frontend/src/components/ScoreForm.jsx` contient le pseudo, l'envoi et les états en cours/enregistré/erreur. `jsonBody()` de `api.js` prépare le POST. Le verrou `locked.current` est posé avant l'envoi pour bloquer deux soumissions simultanées. Une erreur conserve le pseudo et permet de réessayer ; un succès termine l'envoi pour cette partie.
 5. **Actualiser le classement.** `main.jsx` affiche le formulaire seulement à la fin, puis relit le Top 10 après un succès. Un échec de cette lecture affiche une erreur tout en conservant « Score enregistré ». Une nouvelle lecture annule la précédente pour empêcher un ancien classement de remplacer le plus récent. Recommencer retire le formulaire ; celui de la partie suivante commence à zéro.
 
 Pour lire un premier test à la fois :
 
 ```sh
 # Depuis frontend/
-node --test --test-name-pattern='une victoire rapporte' src/score.test.js
+node --test --test-name-pattern='une victoire rapporte' tests/unit/score.test.js
 # Depuis backend/
 uv run pytest -q tests/test_scores.py::test_post_score_then_read_leaderboard
 ```
@@ -139,18 +151,18 @@ La refonte demandée utilise ui-ux-pro-max, design-taste-frontend et Impeccable 
 Pour comprendre dans l'ordre :
 
 1. **Accueil ou partie.** Dans `main.jsx`, le booléen `home` choisit l'écran. `goHome()` appelle d'abord `pause()`. `start()` remet le jeu à zéro et rend le Canvas visible avant d'appeler `resume()` ; `flushSync()` force ce petit changement d'affichage à se terminer pendant le clic utilisateur, avant le focus et la capture de souris.
-2. **Plein écran.** Lire le premier test de `frontend/src/fullscreen.test.js`, puis les cinq lignes de `fullscreen.js`. La fonction demande le plein écran sur l'élément du jeu ou le quitte s'il est actif. Le composant affiche l'erreur et garde la partie accessible si le navigateur refuse.
+2. **Plein écran.** Lire le premier test de `frontend/tests/unit/fullscreen.test.js`, puis les cinq lignes de `fullscreen.js`. La fonction demande le plein écran sur l'élément du jeu ou le quitte s'il est actif. Le composant affiche l'erreur et garde la partie accessible si le navigateur refuse.
 3. **Canvas à la bonne taille.** Dans `canvas.js`, `ResizeObserver` observe la zone de jeu. `resize()` adapte le rendu et le rapport largeur/hauteur de la caméra. Le ratio de pixels est plafonné à 2 ; le nettoyage libère l'observer et les textures.
 4. **Afficher le tir.** Les deux premiers tests de `shooting.test.js` vérifient le point du premier impact et l'absence d'impact dans le vide. `castShot()` renvoie ce résultat, `hitsTarget()` conserve sa réponse booléenne. `showShot()` dans `canvas.js` dessine une ligne lumineuse jusqu'à l'impact, puis la fait disparaître en 100 ms. Les dégâts restent immédiats et la ligne ne bloque pas les tirs suivants.
 5. **Lire les visuels séparément.** `Hud.jsx` affiche les données déjà connues. `LevelMap.jsx` dessine le plan depuis les coordonnées du niveau. `textures.js` crée des textures industrielles déterministes, utilisées par `room.js`, sans changer les murs ni les collisions.
 
 ```sh
 # Depuis frontend/
-node --test src/fullscreen.test.js
-node --test src/shooting.test.js src/textures.test.js
+node --test tests/unit/fullscreen.test.js
+node --test tests/unit/shooting.test.js tests/unit/textures.test.js
 ```
 
-TDD : le contrôle navigateur a constaté l'absence de Jouer avant l'accueil ; les tests plein écran, impact et textures ont été observés en échec avant leur implémentation. À la fin du sprint 6, les 82 tests front et le build passaient. Le scénario `frontend/tests/menus.playwright.js`, depuis adapté au sprint 7, est exécutable avec l'outil Playwright `browser_run_code_unsafe` et son argument `filename` ; il est distinct des tests Node lancés par `npm test`. Dans sa version du sprint 6, il couvrait accueil, pause avec joueur blessé et scène immobile, reprise sans reset, retour, nouvelle partie, victoire, formulaire, rejouer et redimensionnement. Le contrôle du tracé avait donné 0 pixel jaune avant, 381 pendant le tir, 0 après. Ce scénario simulait seulement la capture native de souris et n'écrivait aucun score de test.
+TDD : le contrôle navigateur a constaté l'absence de Jouer avant l'accueil ; les tests plein écran, impact et textures ont été observés en échec avant leur implémentation. À la fin du sprint 6, les 82 tests front et le build passaient. Le scénario `frontend/tests/browser/menus.playwright.js`, depuis adapté au sprint 7, est exécutable avec l'outil Playwright `browser_run_code_unsafe` et son argument `filename` ; il est distinct des tests Node lancés par `npm test`. Dans sa version du sprint 6, il couvrait accueil, pause avec joueur blessé et scène immobile, reprise sans reset, retour, nouvelle partie, victoire, formulaire, rejouer et redimensionnement. Le contrôle du tracé avait donné 0 pixel jaune avant, 381 pendant le tir, 0 après. Ce scénario simulait seulement la capture native de souris et n'écrivait aucun score de test.
 
 L'utilisateur a confirmé dans son navigateur que le plein écran natif, les tirs et les menus fonctionnent. Le navigateur automatisé refuse le plein écran avec « not granted » : son message de repli est vérifié, tandis que le mode natif est validé manuellement. Les captures couvrent accueil et résultat en 1440 px et 390 px, ainsi que jeu et pause sur ordinateur.
 
@@ -172,7 +184,7 @@ La première et la deuxième sortie affichent **Niveau terminé**, puis **Niveau
 
 Pour comprendre par petites étapes :
 
-1. **Lire un plan.** Commencer par le premier test de `frontend/src/levelsLayout.test.js`, puis ouvrir `levels/entry.js`, `maintenance.js` et `reactor.js`. Un niveau contient `size`, `spawn`, `enemies`, `walls`, `exit` et `wallTexture`. Les tests vérifient les emplacements libres, les deux passages de l'Entrée et les trajets avec le vrai BFS.
+1. **Lire un plan.** Commencer par le premier test de `frontend/tests/unit/levelsLayout.test.js`, puis ouvrir `src/game/levels/entry.js`, `maintenance.js` et `reactor.js`. Un niveau contient `size`, `spawn`, `enemies`, `walls`, `exit` et `wallTexture`. Les tests vérifient les emplacements libres, les deux passages de l'Entrée et les trajets avec le vrai BFS.
 2. **Créer les gardes sans modifier le plan.** Le premier test de `campaign.test.js`, puis `newGame()` dans `game.js`, montrent la copie des données. `state.enemies` contient pour chaque garde son `id`, sa position, ses 2 PV, son délai, son alerte et son mode. Le test suivant explique `nextLevel()` et la conservation des PV.
 3. **Détecter avant de poursuivre.** Lire le premier test de `enemy.test.js`, puis les constantes et le début d'`advanceEnemy()` dans `enemy.js`. Continuer avec le test de perte de vue : la détection à 4 m exige une vue libre, la poursuite mémorisée s'arrête seulement au-delà de 6 m. Les attaques et la défaite suivent les règles déjà apprises.
 4. **Tirer sur le bon garde.** Le premier test de `shoot.test.js` appelle maintenant `shoot(state, enemy.id)`. Un identifiant inconnu ou `null` représente un tir manqué. `castShot()` garde le premier impact Three.js ; `canvas.js` récupère l'identifiant de ce garde avant d'appliquer les dégâts. Un mur bloque toujours le tir.
@@ -182,10 +194,10 @@ Pour comprendre par petites étapes :
 
 ```sh
 # Depuis frontend/, lire puis lancer une petite règle à la fois.
-node --test --test-name-pattern='détection demande' src/enemy.test.js
-node --test src/shoot.test.js src/enemyAnimation.test.js
-node --test src/levelsLayout.test.js src/campaign.test.js
-node --test src/playerStats.test.js
+node --test --test-name-pattern='détection demande' tests/unit/enemy.test.js
+node --test tests/unit/shoot.test.js tests/unit/enemyAnimation.test.js
+node --test tests/unit/levelsLayout.test.js tests/unit/campaign.test.js
+node --test tests/unit/playerStats.test.js
 npm test
 ```
 
@@ -193,10 +205,10 @@ Validation initiale du sprint 7 : **108 tests Node front**, build et quatre scé
 
 Les scénarios navigateur se lancent séparément avec `browser_run_code_unsafe` et leur `filename` :
 
-- `frontend/tests/menus.playwright.js` : accueil, pause, reprise, taille du Canvas, tracé du tir et vrai trajet du premier niveau.
-- `frontend/tests/guards.playwright.js` : vrai déplacement vers un garde, détection, poursuite et animation visibles, dégâts au contact, deux tirs pour l'éliminer et arrêt de ses attaques.
-- `frontend/tests/campaign.playwright.js` : captures de chaque plan avant modification, perte réelle d'un PV au premier niveau, puis sorties temporairement élargies uniquement dans le navigateur pour vérifier les menus, les PV conservés, le formulaire final et Rejouer. Les sorties sont restaurées après chaque victoire et par rechargement ; ce scénario ne prétend pas parcourir réellement toute la campagne.
-- `frontend/tests/player-stats.playwright.js` : réponses de statistiques interceptées dans le navigateur pour vérifier le contrat et les états d'affichage, sans créer de données en base.
+- `frontend/tests/browser/menus.playwright.js` : accueil, pause, reprise, taille du Canvas, tracé du tir et vrai trajet du premier niveau.
+- `frontend/tests/browser/guards.playwright.js` : vrai déplacement vers un garde, détection, poursuite et animation visibles, dégâts au contact, deux tirs pour l'éliminer et arrêt de ses attaques.
+- `frontend/tests/browser/campaign.playwright.js` : captures de chaque plan avant modification, perte réelle d'un PV au premier niveau, puis sorties temporairement élargies uniquement dans le navigateur pour vérifier les menus, les PV conservés, le formulaire final et Rejouer. Les sorties sont restaurées après chaque victoire et par rechargement ; ce scénario ne prétend pas parcourir réellement toute la campagne.
+- `frontend/tests/browser/player-stats.playwright.js` : réponses de statistiques interceptées dans le navigateur pour vérifier le contrat et les états d'affichage, sans créer de données en base.
 
 La capture native de souris est simulée dans les scénarios de jeu. Les vérifications navigateur sont distinctes de `npm test`, et les scénarios de campagne et de gardes bloquent les POST de scores. Les résultats de la CI correspondent au commit publié et restent à consulter séparément.
 
@@ -248,18 +260,18 @@ Les deux images AMD64 ont été construites et vérifiées ensemble avec `script
 
 Pour lire le code par petites étapes :
 
-1. `levelsLayout.test.js` et `levels/` : taille, emplacements libres, deux routes par carte et accès de tous les ennemis, soins et sas. Les ennemis utilisent le catalogue `enemyTypes.js`.
+1. `levelsLayout.test.js` et `src/game/levels/` : taille, emplacements libres, deux routes par carte et accès de tous les ennemis, soins et sas. Les ennemis utilisent le catalogue `enemyTypes.js`.
 2. `mission.test.js`, puis `mission.js` : une même graine reproduit les placements, une autre les renouvelle sans modifier les plans.
-3. `game.test.js`, `input.test.js` et `level.test.js` : vitesse normale, Maj, diagonale, petits pas de collision et soins. La petite géométrie fixe de `tests/arena.js` permet de tester ces règles indépendamment des cartes jouables.
+3. `game.test.js`, `input.test.js` et `level.test.js` : vitesse normale, Maj, diagonale, petits pas de collision et soins. La petite géométrie fixe de `tests/fixtures/arena.js` permet de tester ces règles indépendamment des cartes jouables.
 4. `enemy.test.js` et `projectiles.test.js` : poursuite, distances, attaques indépendantes et projectiles qui rencontrent murs ou joueur.
 5. `shoot.test.js` et `score.test.js` : un tir affecte le bon ennemi, une élimination rapporte une seule fois ses points, les sorties et PV donnent les bonus prévus.
 6. `campaign.test.js` : un seul parcours traverse les trois grands secteurs avec leur géométrie réelle. Le test utilise une visée parfaite, tire autant de fois que les PV de chaque ennemi visible et ne tire jamais à travers les murs ; il ne mesure pas la difficulté pour un joueur humain.
 
 ```sh
 # Depuis frontend/
-node --test src/mission.test.js
-node --test src/game.test.js src/projectiles.test.js
-node --test src/levelsLayout.test.js src/campaign.test.js
+node --test tests/unit/mission.test.js
+node --test tests/unit/game.test.js tests/unit/projectiles.test.js
+node --test tests/unit/levelsLayout.test.js tests/unit/campaign.test.js
 npm test
 ```
 
@@ -288,7 +300,7 @@ Ce parcours est réalisé au sprint 5 ; les étapes ci-dessous restent le guide 
 
 1. Dans `backend/tests/test_scores.py`, écrire un test : POST un score, vérifier 201, puis GET et vérifier les données. Constater son échec.
 2. Dans `backend/scores/__init__.py`, ajouter le POST en utilisant le schema et le modèle fournis. Faire passer le test, puis tester un score invalide sans écriture.
-3. Dans `frontend/src/main.jsx`, ajouter le formulaire de pseudo après la fin, le POST, les états saving/saved/error puis la relecture du classement. `src/api.js` est fourni.
+3. Dans `frontend/src/main.jsx`, ajouter le formulaire de pseudo après la fin, le POST, les états saving/saved/error puis la relecture du classement. `src/api/api.js` est fourni.
 4. Redémarrer le backend et relire le score. Conserver un test de cette propriété.
 5. Ajouter une modification personnelle limitée du jeu ou de la ressource ; adapter les tests et les limites du contrat si nécessaire.
 

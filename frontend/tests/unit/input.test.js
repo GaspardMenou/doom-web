@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {bindKeyboard} from './input.js';
+import {bindKeyboard} from '../../src/engine/input.js';
 
 test('Maj active la course et son relâchement revient à la vitesse normale', () => {
   const canvas = new EventTarget();

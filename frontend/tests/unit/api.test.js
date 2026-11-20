@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {createApi, jsonBody} from './api.js';
+import {createApi, jsonBody} from '../../src/api/api.js';
 
 test('une réponse 204 ne tente pas de lire un JSON vide', async () => {
   const api = createApi('http://localhost:8001/', async url => {

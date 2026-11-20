@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {BoxGeometry, BufferGeometry, Line, LineBasicMaterial, Mesh, MeshBasicMaterial, PerspectiveCamera, Vector3} from 'three';
-import {castShot} from './shooting.js';
-import {createRoom} from './room.js';
-import {ARENA} from '../tests/arena.js';
+import {castShot} from '../../src/engine/shooting.js';
+import {createRoom} from '../../src/engine/room.js';
+import {ARENA} from '../fixtures/arena.js';
 
 const TRAINING_ROOM = {...ARENA, height: 4.5, wallTexture: '/art/walls/entry.webp',
   enemies: [{id: 'target', type: 'guard', x: 0, z: -4.5}]};

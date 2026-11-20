@@ -2,7 +2,7 @@
 version: 1
 slug: "frontend-src-main-jsx"
 primary_target: "frontend/src/main.jsx"
-related_targets: ["frontend/src/style.css","frontend/src/room.js"]
+related_targets: ["frontend/src/style.css","frontend/src/engine/room.js"]
 ---
 
 # Écrans du jeu

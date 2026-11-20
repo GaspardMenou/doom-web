@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {LEVELS} from './levels/index.js';
-import {ENEMY_TYPES} from './enemyTypes.js';
-import {advance, newGame, nextLevel, shoot, PLAYER_RADIUS} from './game.js';
-import {advanceEnemy} from './enemy.js';
-import {atExit, canStand, hasLineOfSight} from './level.js';
+import {LEVELS} from '../../src/game/levels/index.js';
+import {ENEMY_TYPES} from '../../src/game/enemyTypes.js';
+import {advance, newGame, nextLevel, shoot, PLAYER_RADIUS} from '../../src/game/game.js';
+import {advanceEnemy} from '../../src/game/enemy.js';
+import {atExit, canStand, hasLineOfSight} from '../../src/game/level.js';
 
 const SEED = 12345;
 

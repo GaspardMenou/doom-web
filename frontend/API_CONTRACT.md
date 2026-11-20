@@ -40,6 +40,6 @@ En développement, `VITE_API_URL` utilise `http://localhost:8001` par défaut. D
 
 ## Tests de contrat
 
-Depuis `frontend/`, `node --test src/playerStats.test.js` vérifie la forme de réponse. Le scénario `frontend/tests/player-stats.playwright.js` utilise uniquement des réponses interceptées dans le navigateur de test : elles ne sont ni écrites dans SQLite ni livrées comme données de production.
+Depuis `frontend/`, `node --test tests/unit/playerStats.test.js` vérifie la forme de réponse. Le scénario `frontend/tests/browser/player-stats.playwright.js` utilise uniquement des réponses interceptées dans le navigateur de test : elles ne sont ni écrites dans SQLite ni livrées comme données de production.
 
 Depuis `backend/`, `uv run pytest -q tests/test_scores.py::test_second_score_updates_player_stats` vérifie que deux scores pour le même pseudo donnent un seul joueur et les statistiques cumulées. Les 22 tests backend passent, y compris la borne de 100000 points. Les scénarios navigateur de jeu bloquent les POST de scores pour préserver les données existantes ; leur score affiché ne constitue donc pas une preuve d'enregistrement en base.

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {toggleFullscreen} from './fullscreen.js';
+import {toggleFullscreen} from '../../src/engine/fullscreen.js';
 
 test('le bouton demande le plein écran pour le jeu', async () => {
   let requested = false;

@@ -22,8 +22,8 @@ async (page) => {
     await page.setViewportSize({width: 1440, height: 1000});
     await page.getByRole('button', {name: 'Jouer', exact: true}).waitFor();
     const initial = await page.evaluate(async type => {
-      const {LEVELS} = await import('/src/levels/index.js');
-      const {newGame} = await import('/src/game.js');
+      const {LEVELS} = await import('/src/game/levels/index.js');
+      const {newGame} = await import('/src/game/game.js');
       Object.assign(LEVELS[0], {size: 40, height: 4.5, spawn: {x: 0, z: 15, angle: 0}, walls: [],
         enemies: [{id: 'browser-enemy', type, x: 0, z: -5}],
         medkits: type === 'guard' ? [{id: 'browser-medkit', x: 5, z: 15}] : [],

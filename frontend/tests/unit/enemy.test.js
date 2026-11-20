@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {advanceEnemy, createEnemy} from './enemy.js';
-import {canStand} from './level.js';
+import {advanceEnemy, createEnemy} from '../../src/game/enemy.js';
+import {canStand} from '../../src/game/level.js';
 
 const arena = {size: 80, walls: []};
 const divider = {...arena, walls: [{x: 0, z: 0, width: 4, depth: 2}]};

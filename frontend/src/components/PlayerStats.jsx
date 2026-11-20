@@ -1,5 +1,5 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {readPlayerStats} from './playerStats.js';
+import {readPlayerStats} from '../api/playerStats.js';
 
 const average = new Intl.NumberFormat('fr-FR', {maximumFractionDigits: 1});
 

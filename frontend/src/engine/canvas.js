@@ -1,12 +1,12 @@
 import * as THREE from 'three';
 import {PointerLockControls} from 'three/addons/controls/PointerLockControls.js';
-import {advance, newGame, nextLevel as beginNextLevel, shoot} from './game.js';
-import {LEVELS} from './levels/index.js';
+import {advance, newGame, nextLevel as beginNextLevel, shoot} from '../game/game.js';
+import {LEVELS} from '../game/levels/index.js';
 import {bindKeyboard} from './input.js';
 import {createRoom} from './room.js';
 import {castShot} from './shooting.js';
 import {enemyFrame} from './enemyAnimation.js';
-import {ENEMY_TYPES} from './enemyTypes.js';
+import {ENEMY_TYPES} from '../game/enemyTypes.js';
 
 export function mountGame(canvas, onState = () => {}) {
   const renderer = new THREE.WebGLRenderer({canvas});

@@ -1,5 +1,5 @@
 import React, {useRef, useState} from 'react';
-import {jsonBody} from './api.js';
+import {jsonBody} from '../api/api.js';
 
 export function ScoreForm({points, request, onSaved}) {
   const [player, setPlayer] = useState('');

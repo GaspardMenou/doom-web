@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {readPlayerStats} from './playerStats.js';
+import {readPlayerStats} from '../../src/api/playerStats.js';
 
 test('le front accepte le contrat de statistiques prévu pour GET /players/', () => {
   const rows = [{player: 'Ada', total_points: 150, games_played: 2, average_points: 75}];

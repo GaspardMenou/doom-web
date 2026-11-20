@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {enemyFrame} from './enemyAnimation.js';
+import {enemyFrame} from '../../src/engine/enemyAnimation.js';
 
 test('un garde immobile garde sa pose de repos', () => {
   assert.equal(enemyFrame({mode: 'idle'}, 0), 0);

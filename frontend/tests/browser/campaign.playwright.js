@@ -25,7 +25,7 @@ async (page) => {
     await page.setViewportSize({width: 1440, height: 1000});
     await page.getByRole('button', {name: 'Jouer', exact: true}).waitFor();
     const levels = await page.evaluate(async () => {
-      const {LEVELS} = await import('/src/levels/index.js');
+      const {LEVELS} = await import('/src/game/levels/index.js');
       return structuredClone(LEVELS);
     });
     check(levels.length === 3 && levels.map(level => level.size).join(',') === '64,80,96', 'les grandes cartes sont absentes');
@@ -60,8 +60,8 @@ async (page) => {
     await pause();
     await button('Retour à l’accueil');
     const guard = await page.evaluate(async () => {
-      const {LEVELS} = await import('/src/levels/index.js');
-      const {newGame} = await import('/src/game.js');
+      const {LEVELS} = await import('/src/game/levels/index.js');
+      const {newGame} = await import('/src/game/game.js');
       Object.assign(LEVELS[0], {size: 40, height: 4.5, spawn: {x: 0, z: 15, angle: 0}, walls: [],
         enemies: [{id: 'browser-guard', type: 'guard', x: 0, z: -5}], medkits: [],
         exit: {x: 17, z: -17, width: 3, depth: 3}});
@@ -93,7 +93,7 @@ async (page) => {
       }
       await page.getByRole('button', {name: 'Reprendre', exact: true}).waitFor();
       await page.evaluate(async index => {
-        const {LEVELS} = await import('/src/levels/index.js');
+        const {LEVELS} = await import('/src/game/levels/index.js');
         const level = LEVELS[index];
         Object.assign(level.exit, {x: level.spawn.x, z: level.spawn.z, width: level.size * 2, depth: level.size * 2});
       }, index);
@@ -103,7 +103,7 @@ async (page) => {
       check(await health() === 2, 'la fin du secteur modifie les PV');
       check(await page.evaluate(() => document.pointerLockElement === null), 'souris retenue après un secteur');
       await page.evaluate(async ({index, original}) => {
-        const {LEVELS} = await import('/src/levels/index.js');
+        const {LEVELS} = await import('/src/game/levels/index.js');
         if (index === 0) Object.assign(LEVELS[0], original);
         else Object.assign(LEVELS[index].exit, original.exit);
       }, {index, original: levels[index]});

@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {LEVELS} from './levels/index.js';
-import {canStand, hasLineOfSight} from './level.js';
-import {nextWaypoint} from './path.js';
-import {ENEMY_TYPES} from './enemyTypes.js';
+import {LEVELS} from '../../src/game/levels/index.js';
+import {canStand, hasLineOfSight} from '../../src/game/level.js';
+import {nextWaypoint} from '../../src/game/path.js';
+import {ENEMY_TYPES} from '../../src/game/enemyTypes.js';
 
 test('la campagne propose trois grands secteurs peuplés de plusieurs types d’ennemis', () => {
   assert.deepEqual(LEVELS.map(level => level.size), [64, 80, 96]);

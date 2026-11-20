@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {advanceProjectiles} from './projectiles.js';
+import {advanceProjectiles} from '../../src/game/projectiles.js';
 
 const arena = {size: 80, walls: []};
 function scenario(projectiles = [{}], player = {x: 20, z: 10}) {

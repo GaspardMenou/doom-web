@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {advance, newGame, PLAYER_RADIUS} from './game.js';
-import {ARENA} from '../tests/arena.js';
+import {advance, newGame, PLAYER_RADIUS} from '../../src/game/game.js';
+import {ARENA} from '../fixtures/arena.js';
 
 function start() {
   return {...newGame(0, 123), player: {...ARENA.spawn}, enemies: [], projectiles: [], medkits: []};

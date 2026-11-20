@@ -1,6 +1,6 @@
 import React from 'react';
-import {PLAYER_MAX_HEALTH} from './game.js';
-import {LEVELS} from './levels/index.js';
+import {PLAYER_MAX_HEALTH} from '../game/game.js';
+import {LEVELS} from '../game/levels/index.js';
 
 export function Hud({state}) {
   const health = state.playerHealth ?? PLAYER_MAX_HEALTH;

@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {NearestFilter, PerspectiveCamera, RepeatWrapping, SRGBColorSpace, Texture} from 'three';
-import {LEVELS} from './levels/index.js';
-import {createRoom} from './room.js';
-import {castShot} from './shooting.js';
+import {LEVELS} from '../../src/game/levels/index.js';
+import {createRoom} from '../../src/engine/room.js';
+import {castShot} from '../../src/engine/shooting.js';
 
 const level = {
   ...LEVELS[0], size: 64, height: 5, walls: [],

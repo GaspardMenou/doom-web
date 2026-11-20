@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {atExit, canStand, hasLineOfSight, moveInLevel} from './level.js';
-import {ARENA} from '../tests/arena.js';
+import {atExit, canStand, hasLineOfSight, moveInLevel} from '../../src/game/level.js';
+import {ARENA} from '../fixtures/arena.js';
 
 const EXIT = ARENA.exit;
 

@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {advance, newGame} from './game.js';
-import {atExit} from './level.js';
-import {createEnemy} from './enemy.js';
-import {ARENA} from '../tests/arena.js';
+import {advance, newGame} from '../../src/game/game.js';
+import {atExit} from '../../src/game/level.js';
+import {createEnemy} from '../../src/game/enemy.js';
+import {ARENA} from '../fixtures/arena.js';
 
 const EXIT = ARENA.exit;
 

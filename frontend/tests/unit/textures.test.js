@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {NearestFilter, RepeatWrapping} from 'three';
-import {LEVELS} from './levels/index.js';
-import {createRoom} from './room.js';
-import {createTexture} from './textures.js';
-import {ENEMY_TYPES} from './enemyTypes.js';
+import {LEVELS} from '../../src/game/levels/index.js';
+import {createRoom} from '../../src/engine/room.js';
+import {createTexture} from '../../src/engine/textures.js';
+import {ENEMY_TYPES} from '../../src/game/enemyTypes.js';
 
 test('les textures de secours fournissent des pixels opaques sans image externe', () => {
   for (const surface of ['floor', 'wall', 'ceiling', 'enemy', 'exit']) {

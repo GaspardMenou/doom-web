@@ -1,15 +1,15 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import {flushSync} from 'react-dom';
-import {mountGame} from './canvas.js';
-import {createApi} from './api.js';
-import {scorePoints} from './score.js';
-import {ScoreForm} from './ScoreForm.jsx';
-import {Hud} from './Hud.jsx';
-import {LevelMap} from './LevelMap.jsx';
-import {toggleFullscreen} from './fullscreen.js';
-import {PlayerStats} from './PlayerStats.jsx';
-import {LEVELS} from './levels/index.js';
+import {mountGame} from './engine/canvas.js';
+import {createApi} from './api/api.js';
+import {scorePoints} from './game/score.js';
+import {ScoreForm} from './components/ScoreForm.jsx';
+import {Hud} from './components/Hud.jsx';
+import {LevelMap} from './components/LevelMap.jsx';
+import {toggleFullscreen} from './engine/fullscreen.js';
+import {PlayerStats} from './components/PlayerStats.jsx';
+import {LEVELS} from './game/levels/index.js';
 import './style.css';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8001';

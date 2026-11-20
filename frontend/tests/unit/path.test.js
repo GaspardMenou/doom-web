@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {canStand, hasLineOfSight} from './level.js';
-import {nextWaypoint} from './path.js';
-import {ARENA} from '../tests/arena.js';
+import {canStand, hasLineOfSight} from '../../src/game/level.js';
+import {nextWaypoint} from '../../src/game/path.js';
+import {ARENA} from '../fixtures/arena.js';
 
 test('un trajet libre vise directement le joueur', () => {
   const from = {x: 3.5, z: 2};

@@ -22,38 +22,38 @@ Les chemins sont relatifs à ce dossier.
 
 | Fichier | Avant | Après | Ce qu'il protège |
 | --- | ---: | ---: | --- |
-| [api.test.js](src/api.test.js) | 4 | 4 | Réponse vide, erreur HTTP, corps JSON, panne réseau. |
-| [campaign.test.js](src/campaign.test.js) | 11 | 8 | Parties indépendantes, niveaux suivants, PV conservés, campagne complète, repos initial sur chaque carte. |
-| [combat.test.js](src/combat.test.js) | 7 | 3 | Raccordement de la boucle au combat et blocage des commandes après la fin. |
-| [enemy.test.js](src/enemy.test.js) | 13 | 13 | Détection, poursuite, attaques, délais indépendants, murs, morts et fréquence d'images. |
-| [enemyAnimation.test.js](src/enemyAnimation.test.js) | 3 | 3 | Repos, alternance des pas et pose d'attaque. |
-| [fullscreen.test.js](src/fullscreen.test.js) | 4 | 4 | Entrée, sortie, incompatibilité et refus du navigateur. |
-| [game.test.js](src/game.test.js) | 9 | 10 | Déplacement, regard, diagonale, fréquence d'images, collisions et temps écoulé. |
-| [input.test.js](src/input.test.js) | 4 | 4 | AZERTY, directions, raccourcis simultanés et touches libérées. |
-| [level.test.js](src/level.test.js) | 7 | 6 | Géométrie, rayons, glissement, ligne de vue et limites de sortie. |
-| [levelsLayout.test.js](src/levelsLayout.test.js) | 6 | 6 | Plans valides, deux passages à l'Entrée et trajets possibles des gardes sur chaque carte. |
-| [path.test.js](src/path.test.js) | 6 | 4 | Trajet direct, contournement dans les deux sens, destination inaccessible et coin du mur. |
-| [playerStats.test.js](src/playerStats.test.js) | 3 | 3 | Contrat API valide, absence de parties, moyenne décimale et réponses invalides. |
-| [roomImages.test.js](src/roomImages.test.js) | 2 | 2 | Images chargées, textures indépendantes et arrivée après démontage. |
-| [score.test.js](src/score.test.js) | 3 | 2 | Formule de victoire et absence de points sans victoire. |
-| [shoot.test.js](src/shoot.test.js) | 4 | 3 | Bon garde touché, tir manqué, deux impacts et arrêt des dégâts après sa mort. |
-| [shooting.test.js](src/shooting.test.js) | 13 | 10 | Premier impact, murs, visée, transformations, objets ignorés et tir au contact. |
-| [textures.test.js](src/textures.test.js) | 2 | 2 | Textures de secours utilisables et scène fidèle aux données du niveau. |
-| [victory.test.js](src/victory.test.js) | 7 | 3 | Entrée dans la sortie, sortie manquée et priorité du coup fatal. |
+| [api.test.js](tests/unit/api.test.js) | 4 | 4 | Réponse vide, erreur HTTP, corps JSON, panne réseau. |
+| [campaign.test.js](tests/unit/campaign.test.js) | 11 | 8 | Parties indépendantes, niveaux suivants, PV conservés, campagne complète, repos initial sur chaque carte. |
+| [combat.test.js](tests/unit/combat.test.js) | 7 | 3 | Raccordement de la boucle au combat et blocage des commandes après la fin. |
+| [enemy.test.js](tests/unit/enemy.test.js) | 13 | 13 | Détection, poursuite, attaques, délais indépendants, murs, morts et fréquence d'images. |
+| [enemyAnimation.test.js](tests/unit/enemyAnimation.test.js) | 3 | 3 | Repos, alternance des pas et pose d'attaque. |
+| [fullscreen.test.js](tests/unit/fullscreen.test.js) | 4 | 4 | Entrée, sortie, incompatibilité et refus du navigateur. |
+| [game.test.js](tests/unit/game.test.js) | 9 | 10 | Déplacement, regard, diagonale, fréquence d'images, collisions et temps écoulé. |
+| [input.test.js](tests/unit/input.test.js) | 4 | 4 | AZERTY, directions, raccourcis simultanés et touches libérées. |
+| [level.test.js](tests/unit/level.test.js) | 7 | 6 | Géométrie, rayons, glissement, ligne de vue et limites de sortie. |
+| [levelsLayout.test.js](tests/unit/levelsLayout.test.js) | 6 | 6 | Plans valides, deux passages à l'Entrée et trajets possibles des gardes sur chaque carte. |
+| [path.test.js](tests/unit/path.test.js) | 6 | 4 | Trajet direct, contournement dans les deux sens, destination inaccessible et coin du mur. |
+| [playerStats.test.js](tests/unit/playerStats.test.js) | 3 | 3 | Contrat API valide, absence de parties, moyenne décimale et réponses invalides. |
+| [roomImages.test.js](tests/unit/roomImages.test.js) | 2 | 2 | Images chargées, textures indépendantes et arrivée après démontage. |
+| [score.test.js](tests/unit/score.test.js) | 3 | 2 | Formule de victoire et absence de points sans victoire. |
+| [shoot.test.js](tests/unit/shoot.test.js) | 4 | 3 | Bon garde touché, tir manqué, deux impacts et arrêt des dégâts après sa mort. |
+| [shooting.test.js](tests/unit/shooting.test.js) | 13 | 10 | Premier impact, murs, visée, transformations, objets ignorés et tir au contact. |
+| [textures.test.js](tests/unit/textures.test.js) | 2 | 2 | Textures de secours utilisables et scène fidèle aux données du niveau. |
+| [victory.test.js](tests/unit/victory.test.js) | 7 | 3 | Entrée dans la sortie, sortie manquée et priorité du coup fatal. |
 | **Total** | **108** | **90** | |
 
 ## Tests du sprint 8 : règles distinctes
 
-Les tests de déplacement et de combat utilisent [arena.js](tests/arena.js), une petite géométrie fixe. Les cartes jouables peuvent ainsi changer de taille ou de disposition sans casser un test qui mesure simplement une vitesse ou une collision.
+Les tests de déplacement et de combat utilisent [arena.js](tests/fixtures/arena.js), une petite géométrie fixe. Les cartes jouables peuvent ainsi changer de taille ou de disposition sans casser un test qui mesure simplement une vitesse ou une collision.
 
 | Fichiers | Ce que les nouveaux cas vérifient |
 | --- | --- |
-| [game](src/game.test.js), [input](src/input.test.js), [level](src/level.test.js) | Marche à 8 m/s, course à 12 avec Maj, diagonale normalisée, collisions en petits pas et soins utilisables une seule fois. |
-| [mission](src/mission.test.js) | Une même graine reproduit les placements, une autre les change ; les emplacements restent praticables et la graine 31 ne superpose plus deux ennemis. Les rayons viennent du catalogue des types. |
-| [enemy](src/enemy.test.js), [projectiles](src/projectiles.test.js) | Types d'ennemis, poursuite, attaques au contact et projectiles qui rencontrent le joueur ou un mur. |
-| [shoot](src/shoot.test.js), [score](src/score.test.js) | Élimination et points attribués une seule fois, bonus de secteur et de victoire, points conservés après défaite. |
-| [levelsLayout](src/levelsLayout.test.js) | Grandes tailles, placements valides et calmes au départ, deux routes par carte et accessibilité des gardes, soins et sas. |
-| [campaign](src/campaign.test.js) | Une partie seedée indépendante de ses données, transitions conservant graine/PV/points, puis un seul parcours complet des trois secteurs. |
+| [game](tests/unit/game.test.js), [input](tests/unit/input.test.js), [level](tests/unit/level.test.js) | Marche à 8 m/s, course à 12 avec Maj, diagonale normalisée, collisions en petits pas et soins utilisables une seule fois. |
+| [mission](tests/unit/mission.test.js) | Une même graine reproduit les placements, une autre les change ; les emplacements restent praticables et la graine 31 ne superpose plus deux ennemis. Les rayons viennent du catalogue des types. |
+| [enemy](tests/unit/enemy.test.js), [projectiles](tests/unit/projectiles.test.js) | Types d'ennemis, poursuite, attaques au contact et projectiles qui rencontrent le joueur ou un mur. |
+| [shoot](tests/unit/shoot.test.js), [score](tests/unit/score.test.js) | Élimination et points attribués une seule fois, bonus de secteur et de victoire, points conservés après défaite. |
+| [levelsLayout](tests/unit/levelsLayout.test.js) | Grandes tailles, placements valides et calmes au départ, deux routes par carte et accessibilité des gardes, soins et sas. |
+| [campaign](tests/unit/campaign.test.js) | Une partie seedée indépendante de ses données, transitions conservant graine/PV/points, puis un seul parcours complet des trois secteurs. |
 
 Le test de campagne utilise une visée parfaite et autant d'impacts que les PV du garde visible ; il vérifie le déplacement réel et les murs, sans représenter la difficulté d'un joueur humain. Les tests unitaires des projectiles restent nécessaires : cette visée parfaite élimine souvent une sentinelle avant qu'elle puisse tirer.
 
@@ -74,10 +74,10 @@ Ces quatre scripts ne font pas partie du nombre affiché par `npm test`.
 
 | Script | Ce qu'il vérifie |
 | --- | --- |
-| [menus](tests/menus.playwright.js) | Vrai trajet du secteur de 64 m, comparaison marche/course, graine de l'URL, redémarrage, plan M, tracé de tir, pause/reprise et Canvas redimensionné. |
-| [guards](tests/guards.playwright.js) | Arène contrôlée de 40 m avec les vrais placements seedés : repos, poursuite, pause, attaque, deux impacts, 100 points et soin. Second essai avec sentinelle : projectile esquivé, tir maintenu et 250 points. |
-| [campaign](tests/campaign.playwright.js) | Transitions vers les vraies cartes de 80 et 96 m, 2 PV conservés, 2700 points sans élimination, formulaire final et Rejouer. Une arène contrôlée permet d'obtenir la blessure ; les sorties sont temporairement élargies pour atteindre les menus. |
-| [player-stats](tests/player-stats.playwright.js) | Chargement, table, vide, erreurs, nouvel essai et largeur mobile, avec réponses API de test. |
+| [menus](tests/browser/menus.playwright.js) | Vrai trajet du secteur de 64 m, comparaison marche/course, graine de l'URL, redémarrage, plan M, tracé de tir, pause/reprise et Canvas redimensionné. |
+| [guards](tests/browser/guards.playwright.js) | Arène contrôlée de 40 m avec les vrais placements seedés : repos, poursuite, pause, attaque, deux impacts, 100 points et soin. Second essai avec sentinelle : projectile esquivé, tir maintenu et 250 points. |
+| [campaign](tests/browser/campaign.playwright.js) | Transitions vers les vraies cartes de 80 et 96 m, 2 PV conservés, 2700 points sans élimination, formulaire final et Rejouer. Une arène contrôlée permet d'obtenir la blessure ; les sorties sont temporairement élargies pour atteindre les menus. |
+| [player-stats](tests/browser/player-stats.playwright.js) | Chargement, table, vide, erreurs, nouvel essai et largeur mobile, avec réponses API de test. |
 
 La capture native de la souris est simulée ; la scène, les commandes, les tirs et les règles sont exécutés. Les scripts de jeu bloquent les POST de scores et ne polluent pas le classement. Ces scénarios ne remplacent pas un essai humain pour régler la difficulté. `menus` vérifie le redémarrage d'une même mission ; `campaign` vérifie le retour d'une campagne terminée au niveau 1 avec 3 PV et zéro point. Le redimensionnement attend la taille réellement obtenue.
 
@@ -92,8 +92,8 @@ Ces cinq sondes ciblent des risques précis ; elles ne constituent pas une analy
 ```sh
 # Depuis frontend/
 npm test
-node --test src/shoot.test.js
-node --test src/enemy.test.js
+node --test tests/unit/shoot.test.js
+node --test tests/unit/enemy.test.js
 ```
 
 ## Vérification du sprint 8

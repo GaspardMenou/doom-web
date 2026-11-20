@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {newGame, shoot} from './game.js';
-import {createEnemy} from './enemy.js';
+import {newGame, shoot} from '../../src/game/game.js';
+import {createEnemy} from '../../src/game/enemy.js';
 
 function targets() {
   return {...newGame(0, 123), enemies: [

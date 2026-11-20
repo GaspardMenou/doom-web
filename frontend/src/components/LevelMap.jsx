@@ -1,5 +1,5 @@
 import React from 'react';
-import {LEVELS} from './levels/index.js';
+import {LEVELS} from '../game/levels/index.js';
 
 export function LevelMap({level = LEVELS[0], player, enemies = level.enemies, medkits = level.medkits ?? []}) {
   const exit = level.exit;

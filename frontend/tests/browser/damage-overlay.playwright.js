@@ -1,4 +1,4 @@
-// Dégâts et rendu réels ; seule la capture native de souris est simulée dans cette petite arène.
+// Dégâts et rendu réels ; capture souris simulée et fil WebSocket neutralisé dans cette petite arène.
 async (page) => {
   const check = (ok, message) => { if (!ok) throw new Error(message); };
   const button = async name => {
@@ -16,10 +16,18 @@ async (page) => {
     ? route.fulfill({json: []}) : route.abort();
 
   await page.route('**/scores/**', scores);
+  const eventsModule = '**/src/api/events.js';
+  await page.route(eventsModule, route => route.fulfill({contentType: 'application/javascript', body: `
+    export * from '/src/api/events.js?legacy-game-fixture';
+    export function connectEvents(_, {onStatus}) {
+      onStatus('closed'); return {send: () => false, close() {}};
+    }
+  `}));
   try {
     await page.goto('http://127.0.0.1:5175/?seed=12345');
     await page.setViewportSize({width: 1440, height: 1000});
     await page.getByRole('button', {name: 'Jouer', exact: true}).waitFor();
+    await page.locator('#player-name').fill('Test dégâts');
     await page.evaluate(async () => {
       const {LEVELS} = await import('/src/game/levels/index.js');
       Object.assign(LEVELS[0], {fixedLayout: true, size: 40, spawn: {x: 0, z: 2, angle: 0}, walls: [],
@@ -83,7 +91,8 @@ async (page) => {
     await page.keyboard.up('Space');
     await page.emulateMedia({reducedMotion: 'no-preference'});
     await page.setViewportSize({width: 1440, height: 1000});
-    await page.reload();
     await page.unroute('**/scores/**', scores);
+    await page.unroute(eventsModule);
+    await page.reload();
   }
 }

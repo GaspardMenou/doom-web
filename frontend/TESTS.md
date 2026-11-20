@@ -70,7 +70,7 @@ Les tests de vitesse et de fréquence d'images se ressemblent, mais détectent d
 
 ## Scénarios navigateur
 
-Ces six scripts ne font pas partie du nombre affiché par `npm test`.
+Ces sept scripts ne font pas partie du nombre affiché par `npm test`.
 
 | Script | Ce qu'il vérifie |
 | --- | --- |
@@ -80,8 +80,9 @@ Ces six scripts ne font pas partie du nombre affiché par `npm test`.
 | [player-stats](tests/browser/player-stats.playwright.js) | Chargement, table, vide, erreurs, nouvel essai et largeur mobile, avec réponses API de test. |
 | [damage-overlay](tests/browser/damage-overlay.playwright.js) | Sang lors d'une baisse de PV, persistance pendant un tir, fondu, nouveau coup, pause/reprise, redémarrage, coup fatal, mouvement réduit et largeur mobile. |
 | [seeds](tests/browser/seeds.playwright.js) | Murs et sas différents pour 12345/54321, reproduction de 12345, plan et distance fidèles à la partie, Z/Q avec codes variables, relâchement et largeur mobile. |
+| [events](tests/browser/events.playwright.js) | Deux onglets WebSocket natifs : pseudo avant partie/réutilisé pour le score, mort et victoire finale uniques, écho, 50 messages, texte React sûr, absence d'historique, fermeture 1008 et jeu hors connexion. |
 
-La capture native de la souris est simulée ; la scène, les commandes, les tirs et les règles sont exécutés. Les scripts de jeu bloquent les POST de scores et ne polluent pas le classement. Ces scénarios ne remplacent pas un essai humain pour régler la difficulté. `menus` vérifie le redémarrage d'une même mission ; `campaign` vérifie le retour d'une campagne terminée au niveau 1 avec 3 PV et zéro point. Le redimensionnement attend la taille réellement obtenue.
+La capture native de la souris est simulée ; la scène, les commandes, les tirs et les règles sont exécutés. Les six scripts hérités neutralisent le module de connexion événementielle pour ne pas diffuser leurs fixtures. `events` utilise de vrais sockets sur une API temporaire ; ses POST de score sont interceptés. Aucun score de test n'est écrit dans les données réelles. Ces scénarios ne remplacent pas un essai humain pour régler la difficulté. `menus` vérifie le redémarrage d'une même mission ; `campaign` vérifie le retour d'une campagne terminée au niveau 1 avec 3 PV et zéro point. Le redimensionnement attend la taille réellement obtenue.
 
 ## Vérification du nettoyage du sprint 7 (historique)
 
@@ -104,7 +105,7 @@ Les tests de grands plans ont été constatés en échec sur les anciennes carte
 
 Une revue indépendante a en complément vérifié **900 missions** (graines 0 à 299 sur trois cartes), sans chevauchement, placement dans un mur ni détection au départ, et **8100 points de passage valides**. Ce contrôle borné est distinct des 104 déclarations de tests ; il ne couvre pas toutes les graines possibles.
 
-## Petit sprint : murs et sas seedés, clavier AZERTY
+## Petit sprint : murs et sas seedés, clavier AZERTY (historique)
 
 Les tests existants de mission vérifient désormais la reproduction des murs et du sas et l'absence de modification des modèles. Un cas de connexité vérifie le sas dégagé, les ennemis et les soins accessibles, ainsi que le calme au départ. Les parcours utilisent le vrai `state.level` généré ; [routes.js](tests/fixtures/routes.js) partage uniquement la préparation des trajets entre les tests. Les règles de déplacement et de combat gardent leur petite arène fixe.
 
@@ -113,3 +114,11 @@ Les tests clavier couvrent les lettres ZQSD avec plusieurs codes physiques, la c
 Les cinq scénarios modifiés `menus`, `campaign`, `guards`, `damage-overlay` et `seeds` passent. Le scénario de statistiques est inchangé et n'a pas été relancé. La capture native de souris reste simulée ; les variantes Z/Q de `seeds` sont des événements clavier synthétiques. L'utilisateur a séparément confirmé que **ZQSD fonctionne maintenant sur l'ordinateur concerné**.
 
 Un contrôle indépendant de **900 missions** (graines 0 à 299 sur trois secteurs) a vérifié les placements, la connexité, le calme, les chevauchements et le dégagement du sas, ainsi que **16200 points de passage**. Il a trouvé 300 plans de murs distincts par secteur et 225/263/277 positions de sas distinctes, sans repli dans cet échantillon. Ces vérifications sous Node sont bornées ; elles ne couvrent pas toutes les graines possibles. La génération garde son repli vers le plan d'origine après 24 essais, par groupes de huit d'amplitude ±3 m, ±2 m puis ±1 m.
+
+## Fil d'événements et catalogue des ennemis
+
+La suite actuelle compte **114 tests Node au vert**, dont six cas dans [events.test.js](tests/unit/events.test.js) pour le pseudo, les URL absolues/relatives, l'écho reçu, les messages invalides, le démontage et les erreurs, et deux dans [gameEvents.test.js](tests/unit/gameEvents.test.js) pour l'envoi unique par campagne, les sorties intermédiaires et l'absence de rattrapage. Le **build Vite de 57 modules passe**.
+
+Les sept scripts navigateur passent. `events` utilise deux onglets sur Vite 5176 et une API temporaire sur 8002 : pseudo blanc ou trop long refusé, espaces extérieurs retirés, pseudo réutilisé sans seconde saisie, un seul death/victory par campagne et un seul écho local, aucune victoire intermédiaire, 50 derniers messages, pseudo HTML rendu comme texte, rechargement sans historique, fermeture 1008 et partie encore jouable sans reconnexion. Un Nginx réel a passé `nginx -t` et des échanges natifs entre deux clients sur `/api/ws/events` ; NPMplus de production reste non vérifié.
+
+Les tests [enemy](tests/unit/enemy.test.js), [combat](tests/unit/combat.test.js) et [shoot](tests/unit/shoot.test.js) prennent les PV, vitesses, portées, délais et points depuis `ENEMY_TYPES`, et tirent autant de fois que les PV du catalogue. Trois tests utilisant les anciennes vitesses ont été observés en échec, puis **38 tests ciblés passent** avec les valeurs actuelles, sans modifier le gameplay. Le fil reste en mémoire et ne rattrape pas une fin de partie survenue hors connexion.

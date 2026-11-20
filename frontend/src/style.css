@@ -622,11 +622,12 @@ progress::-moz-progress-bar {
   inset: 0 0 var(--hud-height);
   background: #090d09d9;
   display: grid;
-  place-items: center;
+  place-items: start center;
   overflow-y: auto;
-  padding: 76px 24px 30px;
+  padding: 76px 24px 90px;
 }
 .menu-panel {
+  margin-block: auto;
   width: min(100%, 580px);
   padding: 30px 34px;
   background: #20251cef;
@@ -666,6 +667,26 @@ progress::-moz-progress-bar {
   font-size: 14px;
   color: #c2c9af;
   line-height: 1.5;
+}
+.start-form input { width: 100%; }
+.score-player { overflow-wrap: anywhere; }
+.start-form .hint { margin: 8px 0 18px; }
+.event-feed { border-top: 1px solid var(--line); background: #151910e8; padding: 16px 24px; }
+.event-feed .list-heading { gap: 12px; flex-wrap: wrap; }
+.event-feed .list-heading h2 { font-size: 22px; }
+.event-feed .hint { margin: 0; }
+.event-feed ol { max-height: 120px; overflow-y: auto; padding: 0; margin: 0; list-style: none; }
+.event-feed li { font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+.event-feed li strong { color: var(--ink); }
+.event-feed.is-floating { position: absolute; z-index: 3; top: 146px; left: 26px; width: min(310px, 40vw); padding: 12px 14px; }
+.event-feed.is-floating ol { max-height: 90px; }
+.event-feed.is-floating .list-heading h2 { font-size: 18px; }
+.menu-panel .event-feed { padding: 14px 0 0; margin-top: 20px; background: none; }
+.menu-panel .event-feed ol { max-height: 63px; }
+@media (max-width: 700px) {
+  .game-overlay { padding-bottom: 120px; }
+  .event-feed.is-floating { top: auto; bottom: 58px; left: 12px; width: min(310px, calc(100% - 24px)); }
+  .event-feed.is-floating ol { max-height: 63px; }
 }
 form {
   margin-top: 20px;

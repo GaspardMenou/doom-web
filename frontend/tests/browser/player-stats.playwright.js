@@ -14,6 +14,13 @@ async (page) => {
     if (mode === 'invalid') return route.fulfill({json: [{player: 'Ada'}]});
     return route.fulfill({json: mode === 'empty' ? [] : rows});
   });
+  const eventsModule = '**/src/api/events.js';
+  await page.route(eventsModule, route => route.fulfill({contentType: 'application/javascript', body: `
+    export * from '/src/api/events.js?legacy-game-fixture';
+    export function connectEvents(_, {onStatus}) {
+      onStatus('closed'); return {send: () => false, close() {}};
+    }
+  `}));
   try {
     await page.goto('http://127.0.0.1:5175');
     await page.getByText('Statistiques par joueur', {exact: true}).click();
@@ -41,6 +48,7 @@ async (page) => {
   } finally {
     if (release) release();
     await page.unroute(pattern);
+    await page.unroute(eventsModule);
     await page.setViewportSize({width: 1440, height: 1000});
     await page.reload();
   }

@@ -32,6 +32,7 @@ Lors d'un POST de score, le backend retrouve le joueur par son pseudo ou le cré
 
 - GET `/scores/` : tableau du Top 10 avec `id`, `player`, `player_id`, `points`, `created_at`. `player` reste le pseudo en texte ; `player_id` désigne le joueur associé au score.
 - POST `/scores/` : corps `{ "player": "Ada", "points": 3450 }`, réponse 201 avec le score enregistré.
+- Le pseudo est demandé avant la partie, nettoyé et conservé dans l'état `playerName` d'App : `ScoreForm` le réutilise sans champ de saisie. `state.player` désigne la position et n'est jamais envoyé comme pseudo.
 - Les points sont des entiers de 0 à 100000. Les éliminations rapportent leurs points même en cas de défaite ; chaque secteur franchi ajoute 500 points, et la victoire finale ajoute 1000 + 100 par PV restant.
 - Aucun score n'est envoyé lors d'une sortie intermédiaire. Les PV et les points de combat sont conservés entre les niveaux ; Rejouer et Jouer repartent du premier niveau avec une nouvelle campagne.
 - La graine, les murs, le sas, les types d'ennemis et les soins restent des données de jeu côté frontend ; le POST envoie toujours uniquement `player` et `points`.
@@ -40,8 +41,18 @@ Le petit sprint sur la géométrie seedée ne change aucune route : `populateLev
 
 En développement, `VITE_API_URL` utilise `http://localhost:8001` par défaut. Dans les images Docker, les requêtes passent par `/api` sur le même domaine. Les chemins ci-dessus sont relatifs à cette base.
 
+## Événements en direct : WebSocket /ws/events
+
+Chaque message envoyé ou reçu est un objet JSON `{ "type": "death", "player": "Ada" }` ou `{ "type": "victory", "player": "Ada" }`. Le pseudo nettoyé comporte de 1 à 24 caractères. Le backend diffuse à tous les clients, expéditeur compris ; un message invalide ferme sa connexion avec le code 1008. Il ne fournit aucun historique.
+
+Le client natif construit l'URL depuis `VITE_API_URL`, en conservant les préfixes : `http://localhost:8001` donne `ws://localhost:8001/ws/events`, et `/api` sur un site HTTPS donne `wss://<domaine>/api/ws/events`. Les URL absolues ou relatives sont prises en charge. `frontend/nginx.conf` transmet HTTP/1.1 et les en-têtes Upgrade et Connection dans `location /api/`.
+
+Le front émet au plus un événement par campagne : `death` à `state.status === "lost"`, ou `victory` à la victoire finale `campaignWon`. Un `won` intermédiaire ne suffit pas. Le fil ajoute seulement les messages reçus et conserve les 50 derniers en mémoire. Le statut de connexion reste visible et une erreur laisse le jeu jouable. Le démontage ferme le socket ; il n'y a ni reconnexion, file d'attente ni rattrapage des événements manqués.
+
 ## Tests de contrat
 
 Depuis `frontend/`, `node --test tests/unit/playerStats.test.js` vérifie la forme de réponse. Le scénario `frontend/tests/browser/player-stats.playwright.js` utilise uniquement des réponses interceptées dans le navigateur de test : elles ne sont ni écrites dans SQLite ni livrées comme données de production.
 
-Depuis `backend/`, `uv run pytest -q tests/test_scores.py::test_second_score_updates_player_stats` vérifie que deux scores pour le même pseudo donnent un seul joueur et les statistiques cumulées. La suite couvre aussi la borne de 100000 points. Les scénarios navigateur de jeu bloquent les POST de scores pour préserver les données existantes ; leur score affiché ne constitue donc pas une preuve d'enregistrement en base. Le scénario de statistiques n'a pas été modifié ni relancé pour le petit sprint murs/sas et AZERTY.
+Depuis `backend/`, `uv run pytest -q tests/test_scores.py::test_second_score_updates_player_stats` vérifie que deux scores pour le même pseudo donnent un seul joueur et les statistiques cumulées. La suite couvre aussi la borne de 100000 points. Les scénarios navigateur interceptent ou bloquent les POST de scores pour préserver les données existantes ; leur score affiché ne constitue donc pas une preuve d'enregistrement en base.
+
+`tests/unit/events.test.js` couvre les URL, pseudos, réception, erreurs et nettoyage ; `gameEvents.test.js` couvre l'envoi unique et l'absence de rattrapage. `tests/browser/events.playwright.js` a vérifié deux onglets natifs avec API et base temporaires, tandis que les six scénarios hérités neutralisent leurs échanges événementiels. Le proxy Nginx réel a aussi été vérifié entre deux clients ; NPMplus de production n'a pas été testé.

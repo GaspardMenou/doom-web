@@ -1,4 +1,4 @@
-// Scène et première carte réelles. Seule la capture native de souris est simulée.
+// Scène et première carte réelles. Capture souris simulée ; fil WebSocket neutralisé.
 // Les transitions rapides des trois secteurs sont vérifiées séparément dans campaign.playwright.js.
 async (page) => {
   const check = (ok, message) => { if (!ok) throw new Error(message); };
@@ -14,7 +14,10 @@ async (page) => {
     await page.keyboard.press('KeyM');
     await page.locator('.tactical-map [data-player-x]').waitFor();
   };
-  const complete = () => page.getByRole('heading', {name: 'Niveau terminé', exact: true}).isVisible();
+  const complete = async () => {
+    check(!await page.getByRole('heading', {name: 'Défaite', exact: true}).isVisible(), 'défaite pendant le trajet vers le sas');
+    return page.getByRole('heading', {name: 'Niveau terminé', exact: true}).isVisible();
+  };
   const walkTo = async point => {
     for (const axis of ['x', 'z']) {
       for (let pulse = 0; pulse < 50; pulse++) {
@@ -51,10 +54,18 @@ async (page) => {
   };
 
   await page.route('**/scores/**', protectScores);
+  const eventsModule = '**/src/api/events.js';
+  await page.route(eventsModule, route => route.fulfill({contentType: 'application/javascript', body: `
+    export * from '/src/api/events.js?legacy-game-fixture';
+    export function connectEvents(_, {onStatus}) {
+      onStatus('closed'); return {send: () => false, close() {}};
+    }
+  `}));
   try {
     await page.goto('http://127.0.0.1:5175/?seed=12345');
     await page.setViewportSize({width: 1440, height: 1000});
     await page.getByRole('button', {name: 'Jouer', exact: true}).waitFor();
+    await page.locator('#player-name').fill('Test menus');
     await page.evaluate(() => {
       let locked = null;
       const canvas = document.querySelector('canvas');
@@ -124,6 +135,7 @@ async (page) => {
     await pause();
     await button('Retour à l’accueil');
     check(!await page.locator('canvas').isVisible(), 'scène visible au retour à l’accueil');
+    check(await page.locator('#player-name').inputValue() === 'Test menus', 'le pseudo est perdu au retour à l’accueil');
 
     // Parcours réel du secteur seedé : périphérie dégagée, puis trajet vers le sas choisi par la graine.
     const route = await page.evaluate(async () => {
@@ -132,13 +144,13 @@ async (page) => {
       const {routesFromSpawn} = await import('/tests/fixtures/routes.js');
       const level = populateLevel(LEVELS[0], 12345);
       const edge = level.size / 2 - 1.5;
-      const corner = {x: edge, z: -edge};
+      const corner = {x: (Math.sign(level.exit.x) || 1) * edge, z: -edge};
       const path = routesFromSpawn({...level, spawn: corner}, 0.7)(level.exit);
       if (!path) throw new Error('aucun chemin du passage périphérique au sas');
       const turns = path.filter((point, index) => index === 0 || index === path.length - 1 ||
         (point.x - path[index - 1].x) * (path[index + 1].z - point.z) !==
         (point.z - path[index - 1].z) * (path[index + 1].x - point.x));
-      return {points: [{x: edge, z: level.spawn.z}, corner, ...turns],
+      return {points: [{x: corner.x, z: level.spawn.z}, corner, ...turns],
         plan: [...level.walls.map(wall => [wall.x - wall.width / 2, wall.z - wall.depth / 2, wall.width, wall.depth]),
           [level.exit.x - level.exit.width / 2, level.exit.z - level.exit.depth / 2, level.exit.width, level.exit.depth]]};
     });
@@ -153,7 +165,7 @@ async (page) => {
       }
     } finally { await page.keyboard.up('Shift'); }
     await page.getByRole('heading', {name: 'Niveau terminé', exact: true}).waitFor({timeout: 5000});
-    check(await page.getByLabel('Pseudo', {exact: true}).count() === 0, 'formulaire avant le dernier secteur');
+    check(await page.locator('section[aria-label="Résultat de la partie"]').count() === 0, 'formulaire avant le dernier secteur');
     check(await page.getByRole('button', {name: 'Niveau suivant', exact: true}).isVisible(), 'suite de campagne absente');
     check(await page.evaluate(() => document.pointerLockElement === null), 'souris retenue après la sortie');
     await page.screenshot({path: '.playwright-mcp/sprint8-level-complete.png'});
@@ -171,7 +183,8 @@ async (page) => {
   } finally {
     for (const key of ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Shift', 'Space']) await page.keyboard.up(key);
     await page.setViewportSize({width: 1440, height: 1000});
-    await page.reload();
     await page.unroute('**/scores/**', protectScores);
+    await page.unroute(eventsModule);
+    await page.reload();
   }
 }

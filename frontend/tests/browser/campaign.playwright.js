@@ -1,6 +1,6 @@
 // Le premier secteur seedé est capturé avant les fixtures de transitions.
 // Blessure dans une arène contrôlée, puis sorties élargies installées avant de charger chaque secteur.
-// Toute mutation disparaît au rechargement final ; aucun score de test n’est envoyé au backend.
+// Toute mutation disparaît au rechargement final ; scores et fil WebSocket isolés du backend.
 async (page) => {
   const check = (ok, message) => { if (!ok) throw new Error(message); };
   const button = async name => {
@@ -20,10 +20,18 @@ async (page) => {
     else await route.continue();
   };
   await page.route('**/scores/**', protectScores);
+  const eventsModule = '**/src/api/events.js';
+  await page.route(eventsModule, route => route.fulfill({contentType: 'application/javascript', body: `
+    export * from '/src/api/events.js?legacy-game-fixture';
+    export function connectEvents(_, {onStatus}) {
+      onStatus('closed'); return {send: () => false, close() {}};
+    }
+  `}));
   try {
     await page.goto('http://127.0.0.1:5175/?seed=12345');
     await page.setViewportSize({width: 1440, height: 1000});
     await page.getByRole('button', {name: 'Jouer', exact: true}).waitFor();
+    await page.locator('#player-name').fill('Test campagne');
     const levels = await page.evaluate(async () => {
       const {LEVELS} = await import('/src/game/levels/index.js');
       return structuredClone(LEVELS);
@@ -111,12 +119,15 @@ async (page) => {
         delete LEVELS[0].fixedLayout;
       }, levels[0]);
       if (final) {
-        check(await page.getByLabel('Pseudo', {exact: true}).isVisible(), 'formulaire absent après la campagne');
+        const result = page.locator('section[aria-label="Résultat de la partie"]');
+        check(await result.isVisible(), 'formulaire absent après la campagne');
+        check((await result.textContent()).includes('Test campagne'), 'le score ne réutilise pas le pseudo de départ');
+        check(await result.locator('input').count() === 0, 'le score redemande le pseudo');
         check(await page.getByRole('button', {name: 'Niveau suivant', exact: true}).count() === 0, 'secteur supplémentaire après la finale');
-        check(parseInt(await page.locator('section[aria-label="Résultat de la partie"] strong').textContent(), 10) === 2700, 'bonus de victoire/PV incorrects');
+        check((await result.textContent()).includes('2700 points'), 'bonus de victoire/PV incorrects');
         await page.screenshot({path: '.playwright-mcp/sprint8-campaign-victory.png'});
       } else {
-        check(await page.getByLabel('Pseudo', {exact: true}).count() === 0, 'formulaire avant le dernier secteur');
+        check(await page.locator('section[aria-label="Résultat de la partie"]').count() === 0, 'formulaire avant le dernier secteur');
         await button('Niveau suivant');
       }
     }
@@ -124,17 +135,18 @@ async (page) => {
     await checkLevel(0);
     check(await health() === 3, 'Rejouer ne restaure pas les PV');
     check(Number(await page.locator('.mission-strip strong').textContent()) === 0, 'Rejouer ne remet pas les points à zéro');
-    check(await page.getByLabel('Pseudo', {exact: true}).count() === 0, 'ancien formulaire après Rejouer');
+    check(await page.locator('section[aria-label="Résultat de la partie"]').count() === 0, 'ancien formulaire après Rejouer');
     check(posts === 0, 'la navigation a tenté d’enregistrer un score');
     return {levels: levels.map(level => level.name), sizes: levels.map(level => level.size), guards: expectedGuards,
       intermediateMenus: 2, carriedHealth: 2, victoryPoints: 2700, replay: true, scorePosts: posts,
-      simulation: 'capture souris et géométries contrôlées pour les transitions ; sorties élargies avant chargement, premier secteur seedé capturé séparément'};
+      simulation: 'capture souris, fil WebSocket neutralisé et géométries contrôlées pour les transitions ; sorties élargies avant chargement, premier secteur seedé capturé séparément'};
   } catch (error) {
     await page.screenshot({path: '.playwright-mcp/sprint8-campaign-error.png'});
     throw error;
   } finally {
     for (const key of ['KeyW', 'KeyS', 'Shift']) await page.keyboard.up(key);
-    await page.reload();
     await page.unroute('**/scores/**', protectScores);
+    await page.unroute(eventsModule);
+    await page.reload();
   }
 }

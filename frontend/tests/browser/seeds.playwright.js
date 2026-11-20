@@ -1,4 +1,4 @@
-// Vraies missions : seule la capture native de souris est simulée.
+// Vraies missions : capture souris simulée et fil WebSocket neutralisé.
 async page => {
   const check = (ok, message) => { if (!ok) throw new Error(message); };
   const plans = [];
@@ -9,11 +9,19 @@ async page => {
     canvas.dispatchEvent(new KeyboardEvent(event.type, {...event, bubbles: true, cancelable: true})),
     {type, key: character, code});
   await page.route('**/scores/**', scores);
+  const eventsModule = '**/src/api/events.js';
+  await page.route(eventsModule, route => route.fulfill({contentType: 'application/javascript', body: `
+    export * from '/src/api/events.js?legacy-game-fixture';
+    export function connectEvents(_, {onStatus}) {
+      onStatus('closed'); return {send: () => false, close() {}};
+    }
+  `}));
   try {
     for (const [index, seed] of [12345, 54321, 12345].entries()) {
       await page.goto(`http://127.0.0.1:5175/?seed=${seed}`);
       await page.setViewportSize({width: 1440, height: 1000});
       await page.getByRole('button', {name: 'Jouer', exact: true}).waitFor();
+      await page.locator('#player-name').fill('Test seeds');
       const expected = await page.evaluate(async seed => {
         const {newGame} = await import('/src/game/game.js');
         const {level, player} = newGame(0, seed);
@@ -67,6 +75,7 @@ async page => {
   } finally {
     await page.setViewportSize({width: 1440, height: 1000});
     await page.unroute('**/scores/**', scores);
+    await page.unroute(eventsModule);
     await page.reload();
   }
 }

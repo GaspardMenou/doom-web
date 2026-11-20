@@ -21,9 +21,11 @@ async (page) => {
     await page.goto('http://127.0.0.1:5175/?seed=12345');
     await page.setViewportSize({width: 1440, height: 1000});
     await page.getByRole('button', {name: 'Jouer', exact: true}).waitFor();
+    await page.locator('#player-name').fill('Test gardes');
     const initial = await page.evaluate(async type => {
       const {LEVELS} = await import('/src/game/levels/index.js');
-      const {newGame} = await import('/src/game/game.js');
+      const {newGame, PLAYER_MAX_HEALTH} = await import('/src/game/game.js');
+      const {ENEMY_TYPES} = await import('/src/game/enemyTypes.js');
       Object.assign(LEVELS[0], {fixedLayout: true, size: 40, height: 4.5, spawn: {x: 0, z: 15, angle: 0}, walls: [],
         enemies: [{id: 'browser-enemy', type, x: 0, z: -5}],
         medkits: type === 'guard' ? [{id: 'browser-medkit', x: 5, z: 15}] : [],
@@ -41,7 +43,7 @@ async (page) => {
         document.dispatchEvent(new Event('pointerlockchange'));
       };
       document.exitPointerLock = () => { locked = null; document.dispatchEvent(new Event('pointerlockchange')); };
-      return {enemy, medkit: predicted.medkits[0], angle};
+      return {enemy, medkit: predicted.medkits[0], angle, spec: ENEMY_TYPES[type], maxHealth: PLAYER_MAX_HEALTH};
     }, type);
     await button('Jouer');
     await page.getByRole('button', {name: /^Pause/}).waitFor();
@@ -61,17 +63,24 @@ async (page) => {
   };
 
   await page.route('**/scores/**', protectScores);
+  const eventsModule = '**/src/api/events.js';
+  await page.route(eventsModule, route => route.fulfill({contentType: 'application/javascript', body: `
+    export * from '/src/api/events.js?legacy-game-fixture';
+    export function connectEvents(_, {onStatus}) {
+      onStatus('closed'); return {send: () => false, close() {}};
+    }
+  `}));
   try {
     const guard = await fixture('guard');
     await page.waitForTimeout(1100);
-    check(await health() === 3 && await guards() === '1/1', 'le garde attaque avant la détection');
+    check(await health() === guard.maxHealth && await guards() === '1/1', 'le garde attaque avant la détection');
     await page.screenshot({path: '.playwright-mcp/sprint8-guard-idle.png'});
-    await approach(guard.enemy, 12);
+    await approach(guard.enemy, guard.spec.detectRange - 2);
     const walkA = await page.locator('canvas').screenshot({path: '.playwright-mcp/sprint8-guard-walk-a.png'});
     await page.waitForTimeout(180);
     const walkB = await page.locator('canvas').screenshot({path: '.playwright-mcp/sprint8-guard-walk-b.png'});
     check(!walkA.equals(walkB), 'la poursuite ne change pas le rendu');
-    check(await health() === 3, 'le garde attaque avant son arrivée au contact');
+    check(await health() === guard.maxHealth, 'le garde attaque avant son arrivée au contact');
 
     await page.evaluate(() => document.exitPointerLock());
     await page.getByRole('button', {name: 'Reprendre', exact: true}).waitFor();
@@ -79,36 +88,40 @@ async (page) => {
     await page.waitForTimeout(180);
     check(paused.equals(await page.locator('canvas').screenshot()), 'le monde continue à avancer en pause');
     await button('Reprendre');
-    await page.waitForFunction(() => document.querySelector('#player-health').value === 2, null, {timeout: 8000});
+    await page.waitForFunction(expected => document.querySelector('#player-health').value === expected,
+      guard.maxHealth - 1, {timeout: 8000});
     await page.screenshot({path: '.playwright-mcp/sprint8-guard-attack.png'});
-    await page.keyboard.press('Space');
-    await page.waitForTimeout(180);
-    await page.keyboard.press('Space');
+    for (let hit = 0; hit < guard.enemy.health; hit++) {
+      await page.keyboard.press('Space');
+      if (hit + 1 < guard.enemy.health) await page.waitForTimeout(180);
+    }
     await page.waitForFunction(() => document.querySelector('.enemy-cell > strong').textContent.replace(/\s/g, '') === '0/1', null, {timeout: 2500});
-    check(Number(await page.locator('.mission-strip strong').textContent()) === 100, 'le garde ne rapporte pas ses points');
-    await page.waitForTimeout(1100);
-    check(await health() === 2, 'le garde mort continue à attaquer');
+    check(Number(await page.locator('.mission-strip strong').textContent()) === guard.spec.score, 'le garde ne rapporte pas ses points');
+    const healthAfterKill = await health();
+    await page.waitForTimeout(guard.spec.attackDelay * 1000 + 100);
+    check(await health() === healthAfterKill, 'le garde mort continue à attaquer');
 
     // Rejoindre la vraie trousse tirée par la graine, sans injecter de vie dans la partie.
     const player = await position();
     const healingAngle = Math.atan2(-(guard.medkit.x - player.x), -(guard.medkit.z - player.z));
     await rotate(guard.angle, healingAngle);
     await page.keyboard.down('KeyW');
-    await page.waitForFunction(() => document.querySelector('#player-health').value === 3, null, {timeout: 6000});
+    await page.waitForFunction(expected => document.querySelector('#player-health').value === expected,
+      Math.min(guard.maxHealth, healthAfterKill + 1), {timeout: 6000});
     await page.keyboard.up('KeyW');
     check(await page.locator('.tactical-map .map-health').count() === 0, 'la trousse ramassée reste sur le plan');
     await page.screenshot({path: '.playwright-mcp/sprint8-healed.png'});
 
     // Un deuxième petit scénario rend visible le nouveau tir adverse et vérifie le tir maintenu.
     const gunner = await fixture('gunner');
-    await approach(gunner.enemy, 18);
+    await approach(gunner.enemy, gunner.spec.attackRange);
     await page.waitForTimeout(120);
     await page.screenshot({path: '.playwright-mcp/sprint8-gunner-projectile.png'});
     await page.keyboard.down('KeyD');
     await page.waitForTimeout(700);
     await page.keyboard.up('KeyD');
     await page.waitForTimeout(200);
-    check(await health() === 3, 'le projectile dirigé vers l’ancienne position n’a pas pu être esquivé');
+    check(await health() === gunner.maxHealth, 'le projectile dirigé vers l’ancienne position n’a pas pu être esquivé');
     const current = await position();
     const target = await page.locator('.tactical-map .map-enemy').evaluate(el =>
       ({x: Number(el.getAttribute('cx')), z: Number(el.getAttribute('cy'))}));
@@ -116,18 +129,19 @@ async (page) => {
     await page.keyboard.down('Space');
     await page.waitForFunction(() => document.querySelector('.enemy-cell > strong').textContent.replace(/\s/g, '') === '0/1', null, {timeout: 2500});
     await page.keyboard.up('Space');
-    check(Number(await page.locator('.mission-strip strong').textContent()) === 250, 'la sentinelle ne rapporte pas ses points');
+    check(Number(await page.locator('.mission-strip strong').textContent()) === gunner.spec.score, 'la sentinelle ne rapporte pas ses points');
     await page.screenshot({path: '.playwright-mcp/sprint8-gunner-defeated.png'});
     check(posts === 0, 'le scénario a tenté d’enregistrer un score');
     return {idle: true, seededFixture: true, walking: true, pause: true, contactDamage: true,
-      guardKillPoints: 100, medkit: true, dodgedProjectile: true, heldFire: true, gunnerKillPoints: 250,
-      scorePosts: posts, simulation: 'capture native de souris et niveau contrôlé uniquement dans le navigateur'};
+      guardKillPoints: guard.spec.score, medkit: true, dodgedProjectile: true, heldFire: true, gunnerKillPoints: gunner.spec.score,
+      scorePosts: posts, simulation: 'capture souris, niveau contrôlé et fil WebSocket neutralisé uniquement dans le navigateur'};
   } catch (error) {
     await page.screenshot({path: '.playwright-mcp/sprint8-guards-error.png'});
     throw error;
   } finally {
     for (const key of ['KeyW', 'KeyD', 'Space']) await page.keyboard.up(key);
-    await page.reload();
     await page.unroute('**/scores/**', protectScores);
+    await page.unroute(eventsModule);
+    await page.reload();
   }
 }

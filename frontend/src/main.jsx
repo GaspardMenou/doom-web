@@ -3,11 +3,14 @@ import {createRoot} from 'react-dom/client';
 import {flushSync} from 'react-dom';
 import {mountGame} from './engine/canvas.js';
 import {createApi} from './api/api.js';
+import {connectEvents, normalizePlayerName} from './api/events.js';
+import {createGameEventSender} from './api/gameEvents.js';
 import {scorePoints} from './game/score.js';
 import {ScoreForm} from './components/ScoreForm.jsx';
 import {Hud} from './components/Hud.jsx';
 import {LevelMap} from './components/LevelMap.jsx';
 import {DamageOverlay} from './components/DamageOverlay.jsx';
+import {EventFeed} from './components/EventFeed.jsx';
 import {toggleFullscreen} from './engine/fullscreen.js';
 import {PlayerStats} from './components/PlayerStats.jsx';
 import {LEVELS} from './game/levels/index.js';
@@ -21,6 +24,13 @@ function App() {
   const canvas = useRef(null);
   const game = useRef(null);
   const scoresRequest = useRef(null);
+  const connection = useRef(null);
+  const nextEventId = useRef(0);
+  const eventSender = useRef(createGameEventSender());
+  const [playerName, setPlayerName] = useState('');
+  const [playerError, setPlayerError] = useState('');
+  const [events, setEvents] = useState([]);
+  const [connectionStatus, setConnectionStatus] = useState('connecting');
   const [state, setState] = useState({status: 'paused'});
   const [home, setHome] = useState(true);
   const [scores, setScores] = useState([]);
@@ -29,6 +39,18 @@ function App() {
   const [fullscreen, setFullscreen] = useState(false);
   const [fullscreenError, setFullscreenError] = useState('');
   const [showPlayerStats, setShowPlayerStats] = useState(false);
+
+  useEffect(() => {
+    const client = connectEvents(apiUrl, {
+      onStatus: setConnectionStatus,
+      onEvent(message) {
+        const received = {...message, id: ++nextEventId.current};
+        setEvents(previous => [...previous.slice(-49), received]);
+      },
+    });
+    connection.current = client;
+    return () => { client.close(); connection.current = null; };
+  }, []);
 
   useEffect(() => {
     try {
@@ -81,11 +103,17 @@ function App() {
 
   function start(seed) {
     if (!game.current) return;
+    let name;
+    try { name = normalizePlayerName(playerName); }
+    catch (error) { setPlayerError(error.message); return; }
     // La capture nécessite un Canvas visible et le clic utilisateur.
     flushSync(() => {
       game.current.restart(seed);
+      setPlayerName(name);
+      setPlayerError('');
       setHome(false);
     });
+    eventSender.current.reset();
     game.current.resume();
   }
 
@@ -107,6 +135,10 @@ function App() {
   const level = state.level ?? LEVELS[levelIndex];
   const hasNext = levelIndex < LEVELS.length - 1;
   const campaignWon = won && !hasNext;
+  useEffect(() => {
+    eventSender.current.announce({status: state.status, campaignWon, playerName},
+      event => connection.current?.send(event) ?? false);
+  }, [state.status, campaignWon, playerName]);
   return <main ref={shell} className={`app-shell ${home ? 'is-home' : 'is-game'}`}>
     <header className="topbar">
       <span className="brand">D<span aria-hidden="true">/</span>W <small>DOOM WEB</small></span>
@@ -126,7 +158,15 @@ function App() {
           <h1>Do<span className="title-right">om</span>{' '}<span className="title-web">W<span className="title-right">eb</span></span></h1>
           <h2>Courez. Ripostez. Trouvez le sas.</h2>
           <p>Trois grands secteurs, jusqu’à 96 mètres de côté. Traqueurs, colosses et sentinelles occupent les passages. Chaque mission renouvelle le plan, les rencontres et les soins.</p>
-          <button className="primary play-button" autoFocus disabled={unavailable} onClick={() => start()}>Jouer <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg></button>
+          <form className="start-form" onSubmit={event => { event.preventDefault(); start(); }}>
+            <label htmlFor="player-name">Pseudo</label>
+            <input id="player-name" name="player" autoFocus autoComplete="nickname" value={playerName}
+              onChange={event => setPlayerName(event.target.value)} required aria-invalid={Boolean(playerError)}
+              aria-describedby={playerError ? 'player-error' : 'player-hint'} />
+            <p id="player-hint" className="hint">De 1 à 24 caractères. Votre pseudo sera utilisé pour le score.</p>
+            {playerError && <p id="player-error" role="alert" className="error">{playerError}</p>}
+            <button className="primary play-button" disabled={unavailable}>Jouer <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg></button>
+          </form>
           <p className="mission-facts">64 / 80 / 96 m <span>·</span> 4 types d’ennemis <span>·</span> Tirs illimités</p>
           {unavailable && <p role="alert" className="error">{state.error}</p>}
         </div>
@@ -141,6 +181,7 @@ function App() {
           {showPlayerStats && <PlayerStats request={request} revision={scores} />}
         </details>
       </section>
+      <EventFeed events={events} status={connectionStatus} />
       <p className="score-disclaimer">Classement de démonstration. Scores déclarés par les joueurs.</p>
     </div>}
 
@@ -160,23 +201,25 @@ function App() {
           <LevelMap level={level} player={state.player} enemies={state.enemies} medkits={state.medkits} />
         </aside>}
         <DamageOverlay health={state.playerHealth ?? 3} active={!home && (playing || lost)} />
+        {playing && <EventFeed events={events} status={connectionStatus} floating />}
       </div>
       <p className="game-message" role="status">{campaignWon ? 'Victoire : tous les niveaux sont terminés !' : won ? 'Niveau terminé : la suite vous attend.' : lost ? 'Défaite : vous n’avez plus de vie.' : playing ? (state.lastShot || 'Objectif : rejoignez le sas vert. Maj pour courir.') : 'En pause : la partie vous attend.'}</p>
       <Hud state={state} />
       {!playing && !home && <section className={`game-overlay${won ? ' has-won' : ''}`} aria-label={won || lost ? 'Fin de partie' : 'Menu de pause'}>
         <div className="menu-panel">
           <h2>{campaignWon ? 'Victoire' : won ? 'Niveau terminé' : lost ? 'Défaite' : unavailable ? 'Signal perdu' : 'En pause'}</h2>
-          <p>{campaignWon ? 'Vous avez traversé les trois niveaux. Inscrivez votre nom.' : won ? `${level.name} est derrière vous. Vos PV sont conservés pour la suite.` : lost ? 'Le secteur a eu raison de vous. Retentez votre chance.' : 'Soufflez un instant. Le secteur peut attendre.'}</p>
+          <p>{campaignWon ? 'Vous avez traversé les trois niveaux. Enregistrez votre score.' : won ? `${level.name} est derrière vous. Vos PV sont conservés pour la suite.` : lost ? 'Le secteur a eu raison de vous. Retentez votre chance.' : 'Soufflez un instant. Le secteur peut attendre.'}</p>
           <p className="mission-seed">Mission {state.seed} · {state.kills ?? 0} éliminations · {scorePoints(state)} points</p>
           <p className="menu-tips">Maintenez le tir. Maj pour courir. M pour le plan. Les trousses rendent un PV.</p>
           {state.error && <p role="alert" className="error">{state.error}</p>}
-          {(campaignWon || lost) && <ScoreForm points={scorePoints(state)} request={request} onSaved={loadScores} />}
+          {(campaignWon || lost) && <ScoreForm points={scorePoints(state)} playerName={playerName} request={request} onSaved={loadScores} />}
           <div className="menu-actions">
             {!won && !lost && !unavailable && <button className="primary" autoFocus onClick={() => game.current.resume()}>Reprendre</button>}
             {won && hasNext && <button className="primary" autoFocus onClick={goNext}>Niveau suivant</button>}
             {!unavailable && <button className={campaignWon || lost ? 'primary' : 'secondary'} autoFocus={campaignWon || lost} onClick={() => start(state.seed)}>{won || lost ? 'Rejouer' : 'Recommencer'}</button>}
             <button className="secondary" onClick={goHome}>Retour à l’accueil</button>
           </div>
+          <EventFeed events={events} status={connectionStatus} />
         </div>
       </section>}
     </section>

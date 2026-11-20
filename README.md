@@ -2,7 +2,7 @@
 
 Projet de FPS rétro inspiré du premier Doom : React pour l'interface, Three.js dans un Canvas pour le jeu, FastAPI + SQLAlchemy pour les scores. Trois secteurs de 64, 80 et 96 mètres de côté proposent des déplacements rapides et quatre types d'ennemis. La graine de mission fait varier localement les murs, le sas, les ennemis et les soins. Les PV sont conservés entre les niveaux ; le résultat peut être enregistré après la dernière sortie ou une défaite.
 
-L'utilisateur a implémenté l'API des joueurs et de leurs statistiques. Le front utilise les routes de score et `GET /players/` pour afficher les résultats par pseudo ; le contrat est décrit dans `frontend/API_CONTRACT.md`.
+L'utilisateur a implémenté l'API des joueurs, de leurs statistiques et le WebSocket `/ws/events`. Le front demande le pseudo avant de jouer, le réutilise pour le score et affiche les morts et victoires reçues en direct ; le contrat est décrit dans `frontend/API_CONTRACT.md`.
 
 ## Première version convenue
 
@@ -10,6 +10,7 @@ L'utilisateur a implémenté l'API des joueurs et de leurs statistiques. Le fron
 - Une arme, munitions illimitées, 3 PV maximum, des soins et 12, 18 puis 24 ennemis mêlant gardes, traqueurs, colosses et sentinelles.
 - Marche à 8 m/s, course à 12 m/s avec Maj, plan en jeu avec M ; accueil, pause, niveaux suivants, victoire/défaite et classement.
 - Statistiques par pseudo affichées à partir de la réponse réelle de l'API ; aucune donnée de démonstration injectée dans l'application.
+- Pseudo demandé une seule fois avant la partie et fil des 50 derniers événements reçus par WebSocket.
 - Développement en TDD et petits sprints. Pour chaque comportement : test en échec, code minimal, tests au vert, nettoyage et vérification dans le navigateur.
 - Rendu prévu le 20 novembre 2026 après-midi.
 
@@ -23,7 +24,7 @@ Dans `backend/` : `uv sync --locked`, `uv run pytest -q`, puis `uv run uvicorn s
 
 Dans `frontend/` : `npm ci`, `npm test`, puis `npm run dev`. Ouvrir `http://127.0.0.1:5175`. Chaque terminal reste dans son dossier. L'[inventaire des tests](frontend/TESTS.md) explique leur rôle et les simplifications effectuées.
 
-Les sections des sprints 1 à 8 ci-dessous conservent l'historique pédagogique et les validations de chaque étape. La pièce de 10 m, le cube unique, `targetHealth` et `shoot(state, true)` appartiennent à ces anciennes versions. Pour comprendre la dernière extension, commencer par « Petit sprint : murs et sas seedés, clavier AZERTY ».
+Les sections des sprints 1 à 8 ci-dessous conservent l'historique pédagogique et les validations de chaque étape. La pièce de 10 m, le cube unique, `targetHealth` et `shoot(state, true)` appartiennent à ces anciennes versions. Pour comprendre la dernière extension, commencer par « Fil d'événements et pseudo avant la partie ».
 
 ## Organisation du frontend
 
@@ -32,7 +33,7 @@ Les sections des sprints 1 à 8 ci-dessous conservent l'historique pédagogique 
 - `src/game/` : règles du jeu, ennemis, collisions, missions, projectiles et score ; `src/game/levels/` contient les cartes.
 - `src/engine/` : scène Three.js, rendu, textures, tirs, clavier et plein écran.
 - `src/components/` : composants React du HUD, du plan, du formulaire et des statistiques.
-- `src/api/` : client HTTP et validation des statistiques reçues.
+- `src/api/` : clients HTTP/WebSocket, validation des messages et envoi unique des fins de partie.
 - `tests/unit/`, `tests/browser/` et `tests/fixtures/` : tests Node, scénarios navigateur et données de test communes.
 
 Les chemins ci-dessus sont relatifs à `frontend/`. `npm test` lance tous les tests unitaires ; les scénarios navigateur restent séparés.
@@ -297,7 +298,7 @@ Le retour des dégâts utilise une image de sang transparente générée avec im
 
 Limites : solo sur ordinateur, déplacements sur un seul étage, sprites orientés vers la caméra à quatre poses. Les tirs du joueur restent instantanés ; les sentinelles disposent de vrais projectiles simulés. Le classement conserve des scores déclarés par le client.
 
-## Petit sprint : murs et sas seedés, clavier AZERTY
+## Petit sprint : murs et sas seedés, clavier AZERTY (historique)
 
 La graine choisit maintenant aussi la géométrie de la mission. `?seed=12345` reproduit les mêmes murs, la même sortie et les mêmes rencontres. Une autre graine renouvelle ces emplacements. Les trois plans de base restent l'ossature des secteurs : les variations déplacent leurs murs indépendamment de quelques mètres.
 
@@ -324,6 +325,20 @@ node --test tests/unit/mission.test.js tests/unit/input.test.js
 npm test
 npm run build
 ```
+
+## Fil d'événements et pseudo avant la partie
+
+L'accueil demande un pseudo de 1 à 24 caractères, après retrait des espaces extérieurs. `App` le conserve dans `playerName` ; `state.player` reste la position du joueur. `ScoreForm` réutilise ce pseudo pour le POST de score, sans seconde saisie.
+
+`src/api/events.js` construit l'URL du WebSocket à partir de `VITE_API_URL` (`http://localhost:8001` par défaut), en conservant son préfixe et en choisissant `ws` ou `wss`. Avec `/api`, le navigateur ouvre `/api/ws/events` sur le domaine courant. La connexion native affiche son état, se ferme au démontage et laisse le jeu jouable en cas d'erreur réseau. `src/api/gameEvents.js` annonce une seule fin de campagne : `death` au passage à `lost`, ou `victory` lorsque `campaignWon` est vrai. Les sorties intermédiaires n'émettent aucune victoire ; Rejouer autorise un nouvel événement pour la nouvelle campagne.
+
+`EventFeed` ajoute uniquement les événements reçus, puisque le serveur renvoie aussi l'événement à son expéditeur. Il conserve les 50 derniers messages dans un `role="log"`, rend les pseudos comme du texte React et suit les messages récents. Nginx transmet HTTP/1.1 et les en-têtes Upgrade/Connection dans `/api/`.
+
+Vérifications : **114 tests Node passent** et le **build Vite de 57 modules passe**. Les sept scénarios navigateur passent ; les six scénarios hérités neutralisent leur connexion événementielle pour ne pas diffuser leurs fixtures. `events.playwright.js` utilise deux onglets et de vrais WebSockets sur une API temporaire : refus des pseudos blancs/trop longs, pseudo nettoyé réutilisé pour le score, mort et victoire uniques dans les deux onglets, absence de victoire intermédiaire, limite de 50, texte HTML non interprété, rechargement sans historique et fermeture 1008 sans reconnexion ni blocage du jeu. Les POST de scores sont interceptés. Le proxy Nginx réel a également passé `nginx -t` et l'échange entre deux clients sur `/api/ws/events`. Le backend existant a été lu et lancé avec une base temporaire ; aucun fichier backend ni aucune donnée réelle n'a été modifié.
+
+Les tests `enemy`, `combat` et `shoot` lisent désormais PV, vitesse, portée, délai et score dans `ENEMY_TYPES`, et tirent jusqu'aux PV prévus. Trois assertions liées aux anciennes vitesses ont été constatées en échec, puis les 38 tests ciblés passent avec le catalogue actuel, sans modifier les règles du jeu.
+
+Limites : fil en mémoire, sans historique persistant, file d'attente, reconnexion ni rattrapage ; une fin de partie hors connexion n'est pas diffusée. Le reverse proxy NPMplus de production n'a pas été vérifié.
 
 ## Premier trajet complet
 

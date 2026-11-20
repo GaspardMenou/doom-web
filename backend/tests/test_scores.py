@@ -119,3 +119,28 @@ def test_second_score_updates_player_stats(client):
     assert player_stats["total_points"] == 170  # 80 + 90
     assert player_stats["games_played"] == 2
     assert player_stats["average_points"] == 85.0  # (80 + 90) / 2
+    
+def test_multiple_players_stats(client):
+    response = client.post("/scores/", json={"player": "Ada", "points": 80})
+    assert response.status_code == 201
+    response = client.post("/scores/", json={"player": "Bob", "points": 70})
+    assert response.status_code == 201
+    response = client.post("/scores/", json={"player": "Ada", "points": 90})
+    assert response.status_code == 201
+    
+    response = client.get("/players/")
+    assert response.status_code == 200
+    players = response.json()
+    
+    assert len(players) == 2
+    
+    ada_stats = next(player for player in players if player["player"] == "Ada")
+    bob_stats = next(player for player in players if player["player"] == "Bob")
+    
+    assert ada_stats["total_points"] == 170
+    assert ada_stats["games_played"] == 2
+    assert ada_stats["average_points"] == 85.0
+    
+    assert bob_stats["total_points"] == 70
+    assert bob_stats["games_played"] == 1
+    assert bob_stats["average_points"] == 70.0

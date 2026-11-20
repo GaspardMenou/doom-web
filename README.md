@@ -1,6 +1,6 @@
 # Doom Web
 
-Projet de FPS rétro inspiré du premier Doom : React pour l'interface, Three.js dans un Canvas pour le jeu, FastAPI + SQLAlchemy pour les scores. Le sprint 8 propose trois secteurs de 64, 80 et 96 mètres de côté, des déplacements rapides, quatre types d'ennemis et des rencontres dont le placement varie à chaque nouvelle campagne. Les PV sont conservés entre les niveaux ; le résultat peut être enregistré après la dernière sortie ou une défaite.
+Projet de FPS rétro inspiré du premier Doom : React pour l'interface, Three.js dans un Canvas pour le jeu, FastAPI + SQLAlchemy pour les scores. Trois secteurs de 64, 80 et 96 mètres de côté proposent des déplacements rapides et quatre types d'ennemis. La graine de mission fait varier localement les murs, le sas, les ennemis et les soins. Les PV sont conservés entre les niveaux ; le résultat peut être enregistré après la dernière sortie ou une défaite.
 
 L'utilisateur a implémenté l'API des joueurs et de leurs statistiques. Le front utilise les routes de score et `GET /players/` pour afficher les résultats par pseudo ; le contrat est décrit dans `frontend/API_CONTRACT.md`.
 
@@ -19,11 +19,11 @@ Le backend fourni savait lire un classement vide. Le sprint 5 ajoute l'enregistr
 
 ## Lancer
 
-Dans `backend/` : `uv sync --locked`, `uv run pytest -q` (22 tests), puis `uv run uvicorn scores:create_app --factory --reload --port 8001`.
+Dans `backend/` : `uv sync --locked`, `uv run pytest -q`, puis `uv run uvicorn scores:create_app --factory --reload --port 8001`.
 
 Dans `frontend/` : `npm ci`, `npm test`, puis `npm run dev`. Ouvrir `http://127.0.0.1:5175`. Chaque terminal reste dans son dossier. L'[inventaire des tests](frontend/TESTS.md) explique leur rôle et les simplifications effectuées.
 
-Les sections des sprints 1 à 7 ci-dessous conservent l'historique pédagogique et les validations de chaque étape. La pièce de 10 m, le cube unique, `targetHealth` et `shoot(state, true)` appartiennent à ces anciennes versions. Les tests ont depuis été adaptés ; pour comprendre le fonctionnement actuel, commencer par le sprint 8.
+Les sections des sprints 1 à 8 ci-dessous conservent l'historique pédagogique et les validations de chaque étape. La pièce de 10 m, le cube unique, `targetHealth` et `shoot(state, true)` appartiennent à ces anciennes versions. Pour comprendre la dernière extension, commencer par « Petit sprint : murs et sas seedés, clavier AZERTY ».
 
 ## Organisation du frontend
 
@@ -229,7 +229,7 @@ Les six visuels raster livrés au sprint 7 ont leurs prompts exacts et leur prov
 
 Limites au sprint 7 : les gardes n'avaient pas de collisions entre eux ni avec le joueur ; les sprites sont des billboards à quatre poses, pas des personnages 3D. Le trajet utilise une grille d'un mètre. Les tirs restent instantanés et le score est déclaré par le client.
 
-## Sprint 8 : grands secteurs, course, rencontres variables et sas d'extraction
+## Sprint 8 : grands secteurs, course, rencontres variables et sas d'extraction (historique)
 
 Les plans ne sont plus de petites salles agrandies : ils proposent de longues traversées, des bâtiments visitables, des allées, des boucles et plusieurs itinéraires vers la sortie.
 
@@ -261,7 +261,7 @@ Les deux images AMD64 ont été construites et vérifiées ensemble avec `script
 Pour lire le code par petites étapes :
 
 1. `levelsLayout.test.js` et `src/game/levels/` : taille, emplacements libres, deux routes par carte et accès de tous les ennemis, soins et sas. Les ennemis utilisent le catalogue `enemyTypes.js`.
-2. `mission.test.js`, puis `mission.js` : une même graine reproduit les placements, une autre les renouvelle sans modifier les plans.
+2. `mission.test.js`, puis `mission.js` : une même graine reproduit les placements, une autre les renouvelle sans modifier les modèles de niveau.
 3. `game.test.js`, `input.test.js` et `level.test.js` : vitesse normale, Maj, diagonale, petits pas de collision et soins. La petite géométrie fixe de `tests/fixtures/arena.js` permet de tester ces règles indépendamment des cartes jouables.
 4. `enemy.test.js` et `projectiles.test.js` : poursuite, distances, attaques indépendantes et projectiles qui rencontrent murs ou joueur.
 5. `shoot.test.js` et `score.test.js` : un tir affecte le bon ennemi, une élimination rapporte une seule fois ses points, les sorties et PV donnent les bonus prévus.
@@ -296,6 +296,34 @@ Les nouveaux sprites conservent quatre poses par feuille, avec leurs prompts et 
 Le retour des dégâts utilise une image de sang transparente générée avec imagegen. `DamageOverlay.jsx` observe les baisses de PV : l'image apparaît pendant 180 ms, puis disparaît avec un fondu de 250 ms. Le centre reste dégagé, les clics passent à travers et le mode mouvement réduit atténue l'effet. Pause et redémarrage le nettoient ; un coup fatal peut encore le déclencher. Le scénario `tests/browser/damage-overlay.playwright.js` a été constaté en échec avant l'implémentation puis au vert, y compris lorsqu'un tir actualise le HUD pendant l'effet, sur mobile et avec mouvement réduit. Les 104 tests Node et le build Vite (53 modules) passent après cet ajout.
 
 Limites : solo sur ordinateur, déplacements sur un seul étage, sprites orientés vers la caméra à quatre poses. Les tirs du joueur restent instantanés ; les sentinelles disposent de vrais projectiles simulés. Le classement conserve des scores déclarés par le client.
+
+## Petit sprint : murs et sas seedés, clavier AZERTY
+
+La graine choisit maintenant aussi la géométrie de la mission. `?seed=12345` reproduit les mêmes murs, la même sortie et les mêmes rencontres. Une autre graine renouvelle ces emplacements. Les trois plans de base restent l'ossature des secteurs : les variations déplacent leurs murs indépendamment de quelques mètres.
+
+`src/game/layout.js` essaie jusqu'à 24 variantes déterministes : huit avec un déplacement de chaque mur jusqu'à ±3 m, huit jusqu'à ±2 m, puis huit jusqu'à ±1 m. Les murs gardent une marge extérieure de 3 m. Un parcours sur grille, avec un rayon de 0,7 m, vérifie que le départ, les positions prévues des ennemis et les soins restent reliés. Le sas est choisi parmi les zones accessibles à au moins 75 % de la taille du secteur du départ, avec 2,2 m de dégagement autour de son centre. Si aucune variante n'est valide, le plan d'origine est conservé.
+
+`populateLevel()` renvoie le plan complet. Les ennemis et soins peuvent encore se déplacer jusqu'à 5 m autour de leurs emplacements prévus ; leurs placements doivent être libres et reliés au départ. `newGame()` conserve le résultat dans `state.level`. Le rendu Three.js, les collisions, l'IA, les projectiles, le plan M et la distance au sas utilisent ce même plan, sans le modifier pendant la partie. La carte de l'accueil est marquée **Exemple** ; **M** montre la vraie mission. `fixedLayout: true` réserve une géométrie contrôlée aux arènes des tests.
+
+Le clavier reconnaît d'abord les lettres normalisées de `event.key` pour **ZQSD/WASD**, puis utilise `event.code` comme secours physique. Cela couvre notamment Z et Q rapportés avec `KeyZ` et `KeyQ` sur certains ordinateurs AZERTY. Le suivi par touche évite qu'un relâchement, Maj, une différence de casse ou une perte de focus laisse le joueur en mouvement. En plus des variantes simulées dans les tests, l'utilisateur a confirmé que **ZQSD fonctionne maintenant sur l'ordinateur concerné**.
+
+Pour lire les étapes TDD :
+
+1. `tests/unit/mission.test.js` : même graine, mêmes murs et sas ; autre graine, autres emplacements ; modèles d'origine préservés. Ce cas a d'abord échoué avant l'ajout de la génération.
+2. `src/game/layout.js`, puis `src/game/mission.js` : proposer une variante, vérifier les passages, choisir le sas, puis placer les rencontres.
+3. `tests/unit/campaign.test.js` et `src/game/game.js` : les règles utilisent le plan de la partie ; un seul parcours des trois secteurs garde sa visée parfaite et vérifie les transitions.
+4. `tests/unit/input.test.js` et `src/engine/input.js` : les variantes AZERTY et la casse avec Maj ont été observées en échec, puis corrigées sans remplacer les contrôles déjà disponibles.
+
+Les **106 tests Node passent**, ainsi que le **build Vite de 54 modules**. Les cinq scénarios navigateur modifiés passent aussi : `menus`, `campaign`, `guards`, `damage-overlay` et `seeds`. `menus` parcourt réellement le premier secteur seedé ; `seeds` compare les murs, le sas et la distance pour 12345, 54321, puis 12345, et vérifie Z/Q, leur relâchement et la largeur mobile. `campaign` vérifie les transitions dans des géométries contrôlées, avec les sas installés avant la création des parties : 2 PV conservés, 2700 points et Rejouer. La capture native de souris est simulée ; ce contrôle de transitions ne parcourt pas toute la campagne dans le navigateur. Le scénario de statistiques est inchangé et n'a pas été relancé pour ce sprint.
+
+Un contrôle indépendant borné de **900 missions** (graines 0 à 299 sur les trois secteurs) n'a trouvé aucune erreur de placement, connexité, calme au départ, chevauchement ou dégagement du sas. Il a trouvé 300 plans de murs distincts par secteur et respectivement 225, 263 et 277 positions de sas distinctes ; **16200 points de passage** ont été vérifiés. Aucun repli vers le plan d'origine n'a été nécessaire dans cet échantillon. Ces contrôles CPU sous Node ne couvrent pas toutes les graines possibles ; le repli reste prévu pour les autres cas.
+
+```sh
+# Depuis frontend/
+node --test tests/unit/mission.test.js tests/unit/input.test.js
+npm test
+npm run build
+```
 
 ## Premier trajet complet
 

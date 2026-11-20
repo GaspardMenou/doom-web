@@ -70,15 +70,16 @@ Les tests de vitesse et de fréquence d'images se ressemblent, mais détectent d
 
 ## Scénarios navigateur
 
-Ces cinq scripts ne font pas partie du nombre affiché par `npm test`.
+Ces six scripts ne font pas partie du nombre affiché par `npm test`.
 
 | Script | Ce qu'il vérifie |
 | --- | --- |
-| [menus](tests/browser/menus.playwright.js) | Vrai trajet du secteur de 64 m, comparaison marche/course, graine de l'URL, redémarrage, plan M, tracé de tir, pause/reprise et Canvas redimensionné. |
+| [menus](tests/browser/menus.playwright.js) | Vrai trajet du secteur seedé de 64 m, comparaison marche/course, reproduction du plan au redémarrage, plan M fidèle à la géométrie, tracé, pause/reprise et Canvas redimensionné. |
 | [guards](tests/browser/guards.playwright.js) | Arène contrôlée de 40 m avec les vrais placements seedés : repos, poursuite, pause, attaque, deux impacts, 100 points et soin. Second essai avec sentinelle : projectile esquivé, tir maintenu et 250 points. |
-| [campaign](tests/browser/campaign.playwright.js) | Transitions vers les vraies cartes de 80 et 96 m, 2 PV conservés, 2700 points sans élimination, formulaire final et Rejouer. Une arène contrôlée permet d'obtenir la blessure ; les sorties sont temporairement élargies pour atteindre les menus. |
+| [campaign](tests/browser/campaign.playwright.js) | Transitions dans des géométries contrôlées, 2 PV conservés, 2700 points sans élimination, formulaire final et Rejouer. Les sas sont installés avant la création des parties ; le premier secteur seedé est capturé séparément. |
 | [player-stats](tests/browser/player-stats.playwright.js) | Chargement, table, vide, erreurs, nouvel essai et largeur mobile, avec réponses API de test. |
 | [damage-overlay](tests/browser/damage-overlay.playwright.js) | Sang lors d'une baisse de PV, persistance pendant un tir, fondu, nouveau coup, pause/reprise, redémarrage, coup fatal, mouvement réduit et largeur mobile. |
+| [seeds](tests/browser/seeds.playwright.js) | Murs et sas différents pour 12345/54321, reproduction de 12345, plan et distance fidèles à la partie, Z/Q avec codes variables, relâchement et largeur mobile. |
 
 La capture native de la souris est simulée ; la scène, les commandes, les tirs et les règles sont exécutés. Les scripts de jeu bloquent les POST de scores et ne polluent pas le classement. Ces scénarios ne remplacent pas un essai humain pour régler la difficulté. `menus` vérifie le redémarrage d'une même mission ; `campaign` vérifie le retour d'une campagne terminée au niveau 1 avec 3 PV et zéro point. Le redimensionnement attend la taille réellement obtenue.
 
@@ -97,8 +98,18 @@ node --test tests/unit/shoot.test.js
 node --test tests/unit/enemy.test.js
 ```
 
-## Vérification du sprint 8
+## Vérification du sprint 8 (historique)
 
 Les tests de grands plans ont été constatés en échec sur les anciennes cartes puis au vert sur les nouvelles. Les tests de campagne ont été adaptés aux placements seedés, aux PV de chaque type et à la conservation des points. La régression de chevauchement avec la graine 31 a aussi été ajoutée. Après intégration, les **104 tests Node passent**, ainsi que le **build Vite (52 modules)**. Les trois scénarios navigateur modifiés `menus`, `guards` et `campaign` passent avec les limites décrites ci-dessus ; le scénario de statistiques garde ses réponses API contrôlées.
 
 Une revue indépendante a en complément vérifié **900 missions** (graines 0 à 299 sur trois cartes), sans chevauchement, placement dans un mur ni détection au départ, et **8100 points de passage valides**. Ce contrôle borné est distinct des 104 déclarations de tests ; il ne couvre pas toutes les graines possibles.
+
+## Petit sprint : murs et sas seedés, clavier AZERTY
+
+Les tests existants de mission vérifient désormais la reproduction des murs et du sas et l'absence de modification des modèles. Un cas de connexité vérifie le sas dégagé, les ennemis et les soins accessibles, ainsi que le calme au départ. Les parcours utilisent le vrai `state.level` généré ; [routes.js](tests/fixtures/routes.js) partage uniquement la préparation des trajets entre les tests. Les règles de déplacement et de combat gardent leur petite arène fixe.
+
+Les tests clavier couvrent les lettres ZQSD avec plusieurs codes physiques, la casse avec Maj, le secours par code, les touches simultanées et leur libération. Les cas murs/sas et AZERTY ont été observés en échec avant leur implémentation. La suite compte **106 tests Node au vert** ; le **build Vite de 54 modules passe**.
+
+Les cinq scénarios modifiés `menus`, `campaign`, `guards`, `damage-overlay` et `seeds` passent. Le scénario de statistiques est inchangé et n'a pas été relancé. La capture native de souris reste simulée ; les variantes Z/Q de `seeds` sont des événements clavier synthétiques. L'utilisateur a séparément confirmé que **ZQSD fonctionne maintenant sur l'ordinateur concerné**.
+
+Un contrôle indépendant de **900 missions** (graines 0 à 299 sur trois secteurs) a vérifié les placements, la connexité, le calme, les chevauchements et le dégagement du sas, ainsi que **16200 points de passage**. Il a trouvé 300 plans de murs distincts par secteur et 225/263/277 positions de sas distinctes, sans repli dans cet échantillon. Ces vérifications sous Node sont bornées ; elles ne couvrent pas toutes les graines possibles. La génération garde son repli vers le plan d'origine après 24 essais, par groupes de huit d'amplitude ±3 m, ±2 m puis ±1 m.

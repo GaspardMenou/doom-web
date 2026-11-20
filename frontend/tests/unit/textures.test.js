@@ -5,6 +5,7 @@ import {LEVELS} from '../../src/game/levels/index.js';
 import {createRoom} from '../../src/engine/room.js';
 import {createTexture} from '../../src/engine/textures.js';
 import {ENEMY_TYPES} from '../../src/game/enemyTypes.js';
+import {populateLevel} from '../../src/game/mission.js';
 
 test('les textures de secours fournissent des pixels opaques sans image externe', () => {
   for (const surface of ['floor', 'wall', 'ceiling', 'enemy', 'exit']) {
@@ -21,7 +22,8 @@ test('les textures de secours fournissent des pixels opaques sans image externe'
 });
 
 test('les trois décors placent les murs, la sortie et les gardes d’après leur plan', () => {
-  for (const level of LEVELS) {
+  for (const template of LEVELS) {
+    const level = populateLevel(template, 12345);
     const scene = createRoom(level);
     assert.equal(scene.getObjectByName('ceiling').position.y, level.height);
     assert.equal(scene.fog.near, 12);

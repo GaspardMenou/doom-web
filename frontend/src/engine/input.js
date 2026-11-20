@@ -1,13 +1,19 @@
 const movementKeys = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight', 'ShiftLeft', 'ShiftRight'];
+const keyCodes = {
+  z: 'KeyW', w: 'KeyW', q: 'KeyA', a: 'KeyA', s: 'KeyS', d: 'KeyD',
+  arrowup: 'ArrowUp', arrowleft: 'ArrowLeft', arrowdown: 'ArrowDown', arrowright: 'ArrowRight', shift: 'ShiftLeft',
+};
 
 export function bindKeyboard(canvas) {
-  const pressed = new Set();
+  const pressed = new Map();
+  const keyId = event => event.code && event.code !== 'Unidentified' ? event.code : event.key?.toLowerCase();
   function keydown(event) {
-    if (!movementKeys.includes(event.code)) return;
+    const code = keyCodes[event.key?.toLowerCase()] ?? event.code;
+    if (!movementKeys.includes(code)) return;
     event.preventDefault();
-    pressed.add(event.code);
+    pressed.set(keyId(event), code);
   }
-  function keyup(event) { pressed.delete(event.code); }
+  function keyup(event) { pressed.delete(keyId(event)); }
   function clear() { pressed.clear(); }
 
   canvas.addEventListener('keydown', keydown);
@@ -16,12 +22,13 @@ export function bindKeyboard(canvas) {
 
   return {
     read() {
+      const active = new Set(pressed.values());
       return {
-        forward: pressed.has('KeyW') || pressed.has('ArrowUp'),
-        backward: pressed.has('KeyS') || pressed.has('ArrowDown'),
-        left: pressed.has('KeyA') || pressed.has('ArrowLeft'),
-        right: pressed.has('KeyD') || pressed.has('ArrowRight'),
-        sprint: pressed.has('ShiftLeft') || pressed.has('ShiftRight'),
+        forward: active.has('KeyW') || active.has('ArrowUp'),
+        backward: active.has('KeyS') || active.has('ArrowDown'),
+        left: active.has('KeyA') || active.has('ArrowLeft'),
+        right: active.has('KeyD') || active.has('ArrowRight'),
+        sprint: active.has('ShiftLeft') || active.has('ShiftRight'),
       };
     },
     clear,

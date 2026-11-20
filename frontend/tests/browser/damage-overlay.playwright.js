@@ -22,7 +22,7 @@ async (page) => {
     await page.getByRole('button', {name: 'Jouer', exact: true}).waitFor();
     await page.evaluate(async () => {
       const {LEVELS} = await import('/src/game/levels/index.js');
-      Object.assign(LEVELS[0], {size: 40, spawn: {x: 0, z: 2, angle: 0}, walls: [],
+      Object.assign(LEVELS[0], {fixedLayout: true, size: 40, spawn: {x: 0, z: 2, angle: 0}, walls: [],
         enemies: [{id: 'overlay-guard', type: 'guard', x: 0, z: -2}], medkits: [],
         exit: {x: 17, z: -17, width: 3, depth: 3}});
       let locked = null;

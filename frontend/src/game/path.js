@@ -1,7 +1,7 @@
 import {canStand, hasLineOfSight} from './level.js';
 import {LEVELS} from './levels/index.js';
 
-// Les murs sont fixes : les gardes partagent la grille et les passages déjà vérifiés.
+// Les murs restent fixes pendant une mission : chaque plan seedé possède son propre cache.
 const grids = new WeakMap();
 const directions = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 

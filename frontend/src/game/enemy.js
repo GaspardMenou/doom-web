@@ -12,7 +12,7 @@ export function createEnemy(spawn) {
     attackCooldown: 0, alerted: false, mode: 'idle', pathCooldown: 0, waypoint: null};
 }
 
-export function advanceEnemy(previous, dt, level = LEVELS[previous.levelIndex ?? 0]) {
+export function advanceEnemy(previous, dt, level = previous.level ?? LEVELS[previous.levelIndex ?? 0]) {
   if (dt <= 0 || previous.status !== 'playing') return previous;
   let playerHealth = previous.playerHealth;
   let nextProjectileId = previous.nextProjectileId ?? 0;

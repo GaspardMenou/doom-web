@@ -14,17 +14,25 @@ async (page) => {
     await page.keyboard.press('KeyM');
     await page.locator('.tactical-map [data-player-x]').waitFor();
   };
-  const walkTo = async (key, axis, target, increasing) => {
-    await page.keyboard.down(key);
-    try {
-      await page.waitForFunction(({axis, target, increasing}) => {
-        const marker = document.querySelector('.tactical-map [data-player-x]');
-        if (!marker) return false;
-        const value = Number(marker.getAttribute('data-player-' + axis));
-        return increasing ? value >= target : value <= target;
-      }, {axis, target, increasing}, {timeout: 15000});
-    } finally { await page.keyboard.up(key); }
+  const complete = () => page.getByRole('heading', {name: 'Niveau terminé', exact: true}).isVisible();
+  const walkTo = async point => {
+    for (const axis of ['x', 'z']) {
+      for (let pulse = 0; pulse < 50; pulse++) {
+        if (await complete()) return;
+        const delta = point[axis] - (await position())[axis];
+        if (Math.abs(delta) < 0.3) break;
+        const key = axis === 'x' ? delta > 0 ? 'KeyD' : 'KeyA' : delta > 0 ? 'KeyS' : 'KeyW';
+        await page.keyboard.down(key);
+        await page.waitForTimeout(Math.min(500, Math.max(20, (Math.abs(delta) - 0.1) / 12 * 1000)));
+        await page.keyboard.up(key);
+        if (await complete()) return;
+        await page.waitForTimeout(170);
+        check(pulse < 49, `trajet bloqué sur ${axis} vers ${point[axis]}`);
+      }
+    }
   };
+  const plan = () => page.locator('.tactical-map .map-divider, .tactical-map .map-exit').evaluateAll(elements =>
+    elements.map(el => ['x', 'y', 'width', 'height'].map(name => Number(el.getAttribute(name)))));
   const yellowPixels = () => page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => {
     const source = document.querySelector('canvas');
     const copy = document.createElement('canvas');
@@ -87,6 +95,7 @@ async (page) => {
     // Mesurer les deux vitesses sur le même départ, avec la même graine.
     await map();
     const start = await position();
+    const initialPlan = await plan();
     await page.keyboard.down('KeyW');
     await page.waitForTimeout(400);
     await page.keyboard.up('KeyW');
@@ -100,6 +109,7 @@ async (page) => {
     await map();
     const restarted = await position();
     check(Math.abs(restarted.x - start.x) < 0.01 && Math.abs(restarted.z - start.z) < 0.01, 'Recommencer ne restaure pas le départ');
+    check(JSON.stringify(await plan()) === JSON.stringify(initialPlan), 'Recommencer change les murs ou le sas de la graine');
     await page.keyboard.down('Shift');
     await page.keyboard.down('KeyW');
     await page.waitForTimeout(400);
@@ -115,15 +125,34 @@ async (page) => {
     await button('Retour à l’accueil');
     check(!await page.locator('canvas').isVisible(), 'scène visible au retour à l’accueil');
 
-    // Parcours réel du secteur de 64 m par son passage périphérique droit.
+    // Parcours réel du secteur seedé : périphérie dégagée, puis trajet vers le sas choisi par la graine.
+    const route = await page.evaluate(async () => {
+      const {LEVELS} = await import('/src/game/levels/index.js');
+      const {populateLevel} = await import('/src/game/mission.js');
+      const {routesFromSpawn} = await import('/tests/fixtures/routes.js');
+      const level = populateLevel(LEVELS[0], 12345);
+      const edge = level.size / 2 - 1.5;
+      const corner = {x: edge, z: -edge};
+      const path = routesFromSpawn({...level, spawn: corner}, 0.7)(level.exit);
+      if (!path) throw new Error('aucun chemin du passage périphérique au sas');
+      const turns = path.filter((point, index) => index === 0 || index === path.length - 1 ||
+        (point.x - path[index - 1].x) * (path[index + 1].z - point.z) !==
+        (point.z - path[index - 1].z) * (path[index + 1].x - point.x));
+      return {points: [{x: edge, z: level.spawn.z}, corner, ...turns],
+        plan: [...level.walls.map(wall => [wall.x - wall.width / 2, wall.z - wall.depth / 2, wall.width, wall.depth]),
+          [level.exit.x - level.exit.width / 2, level.exit.z - level.exit.depth / 2, level.exit.width, level.exit.depth]]};
+    });
     await button('Jouer');
     await map();
-    await walkTo('KeyD', 'x', 30, true);
-    await walkTo('KeyW', 'z', -27.5, false);
-    await page.screenshot({path: '.playwright-mcp/sprint8-exit-approach.png'});
-    await page.keyboard.down('KeyA');
-    await page.getByRole('heading', {name: 'Niveau terminé', exact: true}).waitFor({timeout: 6000});
-    await page.keyboard.up('KeyA');
+    check(JSON.stringify(await plan()) === JSON.stringify(route.plan), 'le plan affiché ne suit pas les murs et le sas seedés');
+    await page.keyboard.down('Shift');
+    try {
+      for (const point of route.points) {
+        if (await complete()) break;
+        await walkTo(point);
+      }
+    } finally { await page.keyboard.up('Shift'); }
+    await page.getByRole('heading', {name: 'Niveau terminé', exact: true}).waitFor({timeout: 5000});
     check(await page.getByLabel('Pseudo', {exact: true}).count() === 0, 'formulaire avant le dernier secteur');
     check(await page.getByRole('button', {name: 'Niveau suivant', exact: true}).isVisible(), 'suite de campagne absente');
     check(await page.evaluate(() => document.pointerLockElement === null), 'souris retenue après la sortie');
@@ -134,12 +163,13 @@ async (page) => {
     check(posts === 0, 'le parcours a tenté d’enregistrer un score');
     return {home: true, pause: true, resume: true, seededRestart: true, map: true,
       movementMeters: {walked, sprinted}, realLargeLevelExit: true, responsiveCanvas: true,
+      seededGeometry: true, routeTurns: route.points.length,
       tracerPixels: {before, during, after}, scorePosts: posts};
   } catch (error) {
     await page.screenshot({path: '.playwright-mcp/sprint8-menus-error.png'});
     throw error;
   } finally {
-    for (const key of ['KeyW', 'KeyA', 'KeyD', 'Shift', 'Space']) await page.keyboard.up(key);
+    for (const key of ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Shift', 'Space']) await page.keyboard.up(key);
     await page.setViewportSize({width: 1440, height: 1000});
     await page.reload();
     await page.unroute('**/scores/**', protectScores);

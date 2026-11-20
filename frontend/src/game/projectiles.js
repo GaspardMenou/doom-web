@@ -27,7 +27,7 @@ function playerImpact(from, to, player, radius) {
   return time >= 0 && time <= 1 ? {x: from.x + dx * time, z: from.z + dz * time} : null;
 }
 
-export function advanceProjectiles(previous, dt, level = LEVELS[previous.levelIndex ?? 0]) {
+export function advanceProjectiles(previous, dt, level = previous.level ?? LEVELS[previous.levelIndex ?? 0]) {
   if (dt <= 0 || previous.status !== 'playing' || !previous.projectiles?.length) return previous;
   let playerHealth = previous.playerHealth;
   const projectiles = [];

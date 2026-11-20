@@ -1,5 +1,5 @@
-// Les captures montrent les trois vraies cartes. Les transitions seules utilisent des sorties élargies.
-// La perte d’un PV est obtenue dans une arène contrôlée injectée uniquement dans le navigateur.
+// Le premier secteur seedé est capturé avant les fixtures de transitions.
+// Blessure dans une arène contrôlée, puis sorties élargies installées avant de charger chaque secteur.
 // Toute mutation disparaît au rechargement final ; aucun score de test n’est envoyé au backend.
 async (page) => {
   const check = (ok, message) => { if (!ok) throw new Error(message); };
@@ -46,7 +46,6 @@ async (page) => {
         return cell?.querySelector('strong')?.textContent.trim() === name &&
           cell.querySelector('small')?.textContent.replace(/\s/g, '') === 'Niveau' + number + '/3';
       }, {name: levels[index].name, number: index + 1}, {timeout: 5000});
-      await page.getByRole('button', {name: /^Pause/}).waitFor();
       check((await page.locator('.enemy-cell > strong').textContent()).replace(/\s/g, '') === count + '/' + count, 'hostiles non réinitialisés');
     };
 
@@ -62,9 +61,13 @@ async (page) => {
     const guard = await page.evaluate(async () => {
       const {LEVELS} = await import('/src/game/levels/index.js');
       const {newGame} = await import('/src/game/game.js');
-      Object.assign(LEVELS[0], {size: 40, height: 4.5, spawn: {x: 0, z: 15, angle: 0}, walls: [],
+      Object.assign(LEVELS[0], {fixedLayout: true, size: 40, height: 4.5, spawn: {x: 0, z: 15, angle: 0}, walls: [],
         enemies: [{id: 'browser-guard', type: 'guard', x: 0, z: -5}], medkits: [],
-        exit: {x: 17, z: -17, width: 3, depth: 3}});
+        exit: {x: 0, z: 18, width: 3, depth: 3}});
+      for (const level of LEVELS.slice(1)) {
+        level.fixedLayout = true;
+        level.exit = {x: level.spawn.x, z: level.spawn.z, width: level.size * 2, depth: level.size * 2};
+      }
       const initial = newGame(0, 12345);
       const enemy = initial.enemies[0];
       LEVELS[0].spawn.angle = Math.atan2(-(enemy.x - initial.player.x), -(enemy.z - initial.player.z));
@@ -82,31 +85,31 @@ async (page) => {
     await page.waitForFunction(() => document.querySelector('#player-health').value === 2, null, {timeout: 8000});
     await pause();
 
+    // Reculer vers le sas déjà présent : le plan de la partie n’est jamais muté après sa création.
+    await button('Reprendre');
+    await page.keyboard.down('Shift');
+    await page.keyboard.down('KeyS');
+    try {
+      await page.getByRole('heading', {name: 'Niveau terminé', exact: true}).waitFor({timeout: 5000});
+    } finally {
+      await page.keyboard.up('KeyS');
+      await page.keyboard.up('Shift');
+    }
+
     for (let index = 0; index < levels.length; index++) {
       if (index > 0) {
         await checkLevel(index);
         check(await health() === 2, 'les PV ont changé au passage au secteur suivant');
-        await map();
-        await page.waitForTimeout(400);
-        await page.screenshot({path: '.playwright-mcp/sprint8-level' + (index + 1) + '.png'});
-        await pause();
       }
-      await page.getByRole('button', {name: 'Reprendre', exact: true}).waitFor();
-      await page.evaluate(async index => {
-        const {LEVELS} = await import('/src/game/levels/index.js');
-        const level = LEVELS[index];
-        Object.assign(level.exit, {x: level.spawn.x, z: level.spawn.z, width: level.size * 2, depth: level.size * 2});
-      }, index);
-      await button('Reprendre');
       const final = index === levels.length - 1;
       await page.getByRole('heading', {name: final ? 'Victoire' : 'Niveau terminé', exact: true}).waitFor({timeout: 5000});
       check(await health() === 2, 'la fin du secteur modifie les PV');
       check(await page.evaluate(() => document.pointerLockElement === null), 'souris retenue après un secteur');
-      await page.evaluate(async ({index, original}) => {
+      if (index === 0) await page.evaluate(async original => {
         const {LEVELS} = await import('/src/game/levels/index.js');
-        if (index === 0) Object.assign(LEVELS[0], original);
-        else Object.assign(LEVELS[index].exit, original.exit);
-      }, {index, original: levels[index]});
+        Object.assign(LEVELS[0], original);
+        delete LEVELS[0].fixedLayout;
+      }, levels[0]);
       if (final) {
         check(await page.getByLabel('Pseudo', {exact: true}).isVisible(), 'formulaire absent après la campagne');
         check(await page.getByRole('button', {name: 'Niveau suivant', exact: true}).count() === 0, 'secteur supplémentaire après la finale');
@@ -125,12 +128,12 @@ async (page) => {
     check(posts === 0, 'la navigation a tenté d’enregistrer un score');
     return {levels: levels.map(level => level.name), sizes: levels.map(level => level.size), guards: expectedGuards,
       intermediateMenus: 2, carriedHealth: 2, victoryPoints: 2700, replay: true, scorePosts: posts,
-      simulation: 'capture souris, arène contrôlée pour la blessure et sorties élargies pour les transitions uniquement dans le navigateur'};
+      simulation: 'capture souris et géométries contrôlées pour les transitions ; sorties élargies avant chargement, premier secteur seedé capturé séparément'};
   } catch (error) {
     await page.screenshot({path: '.playwright-mcp/sprint8-campaign-error.png'});
     throw error;
   } finally {
-    await page.keyboard.up('KeyW');
+    for (const key of ['KeyW', 'KeyS', 'Shift']) await page.keyboard.up(key);
     await page.reload();
     await page.unroute('**/scores/**', protectScores);
   }

@@ -5,6 +5,7 @@ import {ENEMY_TYPES} from '../../src/game/enemyTypes.js';
 import {advance, newGame, nextLevel, shoot, PLAYER_RADIUS} from '../../src/game/game.js';
 import {advanceEnemy} from '../../src/game/enemy.js';
 import {atExit, canStand, hasLineOfSight} from '../../src/game/level.js';
+import {routesFromSpawn} from '../fixtures/routes.js';
 
 const SEED = 12345;
 
@@ -23,7 +24,7 @@ test('une nouvelle partie initialise les vies et ne partage pas ses positions av
       assert.equal(enemy.mode, 'idle');
       assert.ok(Math.abs(enemy.x - level.enemies[slot].x) <= 5);
       assert.ok(Math.abs(enemy.z - level.enemies[slot].z) <= 5);
-      assert.ok(canStand(enemy.x, enemy.z, enemy.radius, level));
+      assert.ok(canStand(enemy.x, enemy.z, enemy.radius, state.level));
     }
     assert.ok(state.medkits.every(medkit => !medkit.taken));
     const fresh = structuredClone(state);
@@ -32,6 +33,8 @@ test('une nouvelle partie initialise les vies et ne partage pas ses positions av
     state.playerHealth = 0;
     state.enemies[0].health = 0;
     state.medkits[0].taken = true;
+    state.level.walls[0].x += 1;
+    state.level.exit.x += 1;
     assert.deepEqual(newGame(index, SEED), fresh);
   }
   assert.deepEqual(LEVELS, before);
@@ -52,6 +55,7 @@ test('passer au niveau suivant conserve la graine, les PV et les points de comba
   assert.equal(next.killPoints, 350);
   assert.equal(next.status, 'playing');
   assert.deepEqual(next.player, fresh.player);
+  assert.deepEqual(next.level, fresh.level);
   assert.deepEqual(next.enemies, fresh.enemies);
   assert.deepEqual(next.medkits, fresh.medkits);
   assert.deepEqual(next.projectiles, []);
@@ -69,9 +73,12 @@ test('on ne saute pas un niveau en cours, perdu, sans vie ou après la dernière
 });
 
 test('collisions, lignes de vue et sorties utilisent la carte demandée', () => {
-  for (const level of LEVELS) {
+  for (const index of [0, 1, 2]) {
+    const state = newGame(index, SEED);
+    const level = state.level;
     assert.ok(atExit(level.exit, level));
     assert.equal(atExit(level.spawn, level), false);
+    assert.equal(advance({...state, enemies: [], player: {...level.exit, angle: 0}}, {}, 1 / 60).status, 'won');
     for (const wall of level.walls) {
       assert.equal(canStand(wall.x, wall.z, PLAYER_RADIUS, level), false);
       assert.equal(hasLineOfSight({x: wall.x, z: wall.z - wall.depth / 2 - 0.75},
@@ -80,15 +87,11 @@ test('collisions, lignes de vue et sorties utilisent la carte demandée', () => 
   }
 });
 
-const routes = [
-  [{x: -28, z: 28}, {x: -28, z: -28}, LEVELS[0].exit],
-  [{x: -24, z: 28}, {x: -24, z: -30}, {x: 32, z: -30}, LEVELS[1].exit],
-  [{x: -22, z: 40}, {x: -22, z: -40}, {x: 0, z: -40}, LEVELS[2].exit],
-];
-
-function walkAndFight(state, index) {
-  const level = LEVELS[index];
-  for (const point of routes[index]) {
+function walkAndFight(state) {
+  const level = state.level;
+  const route = routesFromSpawn(level, PLAYER_RADIUS)(level.exit);
+  assert.ok(route, `Sas inaccessible dans ${level.name}`);
+  for (const point of route) {
     for (let frame = 0; frame < 1200 && state.status === 'playing'; frame++) {
       const dx = point.x - state.player.x;
       const dz = point.z - state.player.z;
@@ -116,7 +119,7 @@ test('une seule campagne traverse les trois cartes en combattant et en conservan
     assert.equal(state.levelIndex, index);
     assert.ok(state.enemies.every(enemy => enemy.health === ENEMY_TYPES[enemy.type].health));
     const killsBefore = state.kills;
-    state = walkAndFight(state, index);
+    state = walkAndFight(state);
     assert.equal(state.status, 'won');
     assert.ok(state.playerHealth > 0);
     assert.ok(state.kills > killsBefore);

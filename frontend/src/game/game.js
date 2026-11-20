@@ -17,6 +17,7 @@ export function newGame(levelIndex = 0, seed = Math.floor(Math.random() * 429496
   return {
     seed: seed >>> 0,
     levelIndex,
+    level: mission,
     player: {...level.spawn},
     enemies: mission.enemies.map(createEnemy),
     medkits: mission.medkits,
@@ -29,7 +30,7 @@ export function newGame(levelIndex = 0, seed = Math.floor(Math.random() * 429496
   };
 }
 
-export function advance(previous, input, seconds, level = LEVELS[previous.levelIndex ?? 0]) {
+export function advance(previous, input, seconds, level = previous.level ?? LEVELS[previous.levelIndex ?? 0]) {
   const dt = Math.max(0, Math.min(seconds, 0.05));
   if (previous.status !== 'playing' || dt === 0) return previous;
   const angle = input.angle ?? previous.player.angle;

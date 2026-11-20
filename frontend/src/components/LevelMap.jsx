@@ -1,13 +1,13 @@
 import React from 'react';
 import {LEVELS} from '../game/levels/index.js';
 
-export function LevelMap({level = LEVELS[0], player, enemies = level.enemies, medkits = level.medkits ?? []}) {
+export function LevelMap({level = LEVELS[0], player, enemies = level.enemies, medkits = level.medkits ?? [], preview = false}) {
   const exit = level.exit;
   const half = level.size / 2;
   const scale = 300 / level.size;
   const grid = `map-grid-${level.id}`;
   return <figure className="level-map">
-    <figcaption>Plan : {level.name} <span>{level.size} × {level.size} m · {level.enemies.length} hostiles</span></figcaption>
+    <figcaption>{preview ? 'Exemple' : 'Plan'} : {level.name} <span>{level.size} × {level.size} m · {level.enemies.length} hostiles</span></figcaption>
     <svg viewBox="0 0 360 330" role="img" aria-label={`Plan du secteur ${level.name} : départ, ${level.enemies.length} gardes et sortie.`}>
       <defs><pattern id={grid} width={scale * 4} height={scale * 4} patternUnits="userSpaceOnUse"><path d={`M${scale * 4} 0H0V${scale * 4}`} fill="none" stroke="currentColor" strokeWidth="0.5" /></pattern></defs>
       <rect x="30" y="15" width="300" height="300" fill={`url(#${grid})`} className="map-grid" />

@@ -4,6 +4,7 @@ import {LEVELS} from '../../src/game/levels/index.js';
 import {canStand, hasLineOfSight} from '../../src/game/level.js';
 import {nextWaypoint} from '../../src/game/path.js';
 import {ENEMY_TYPES} from '../../src/game/enemyTypes.js';
+import {routesFromSpawn} from '../fixtures/routes.js';
 
 test('la campagne propose trois grands secteurs peuplés de plusieurs types d’ennemis', () => {
   assert.deepEqual(LEVELS.map(level => level.size), [64, 80, 96]);
@@ -56,35 +57,9 @@ test('chaque secteur offre deux routes complètes sans imposer un unique zigzag'
   }
 });
 
-function reachableCells(level) {
-  const size = level.size;
-  const half = size / 2;
-  const cellOf = point => Math.floor(point.x + half) + Math.floor(point.z + half) * size;
-  const pointOf = cell => ({x: cell % size - half + 0.5, z: Math.floor(cell / size) - half + 0.5});
-  const start = cellOf(level.spawn);
-  const reached = new Set([start]);
-  const queue = [start];
-  for (let head = 0; head < queue.length; head++) {
-    const cell = queue[head];
-    const x = cell % size;
-    const z = Math.floor(cell / size);
-    const point = pointOf(cell);
-    for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-      if (x + dx < 0 || x + dx >= size || z + dz < 0 || z + dz >= size) continue;
-      const next = cell + dx + dz * size;
-      if (reached.has(next)) continue;
-      const destination = pointOf(next);
-      if (!canStand(destination.x, destination.z, 0.7, level) || !hasLineOfSight(point, destination, 0.7, level)) continue;
-      reached.add(next);
-      queue.push(next);
-    }
-  }
-  return point => reached.has(cellOf(point));
-}
-
 for (const level of LEVELS) {
   test(`${level.name} : tous les gardes, soins et le sas sont reliés au départ`, () => {
-    const reaches = reachableCells(level);
+    const reaches = routesFromSpawn(level);
     for (const destination of [level.exit, ...level.medkits, ...level.enemies]) {
       assert.ok(reaches(destination), `${level.name} : zone inaccessible (${destination.id ?? 'sas'})`);
     }

@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import {PointerLockControls} from 'three/addons/controls/PointerLockControls.js';
 import {advance, newGame, nextLevel as beginNextLevel, shoot} from '../game/game.js';
-import {LEVELS} from '../game/levels/index.js';
 import {bindKeyboard} from './input.js';
 import {createRoom} from './room.js';
 import {castShot} from './shooting.js';
@@ -20,7 +19,7 @@ export function mountGame(canvas, onState = () => {}) {
   let lastPublish = 0;
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   function makeRoom() {
-    return createRoom({...LEVELS[state.levelIndex], enemies: state.enemies, medkits: state.medkits},
+    return createRoom({...state.level, enemies: state.enemies, medkits: state.medkits},
       (url, loaded) => loader.load(url, loaded, undefined, () => {}));
   }
   let scene = makeRoom();
@@ -68,6 +67,7 @@ export function mountGame(canvas, onState = () => {}) {
       enemies: state.enemies,
       playerHealth: state.playerHealth,
       levelIndex: state.levelIndex,
+      level: state.level,
       seed: state.seed,
       player: state.player,
       medkits: state.medkits,

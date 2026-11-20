@@ -24,7 +24,7 @@ async (page) => {
     const initial = await page.evaluate(async type => {
       const {LEVELS} = await import('/src/game/levels/index.js');
       const {newGame} = await import('/src/game/game.js');
-      Object.assign(LEVELS[0], {size: 40, height: 4.5, spawn: {x: 0, z: 15, angle: 0}, walls: [],
+      Object.assign(LEVELS[0], {fixedLayout: true, size: 40, height: 4.5, spawn: {x: 0, z: 15, angle: 0}, walls: [],
         enemies: [{id: 'browser-enemy', type, x: 0, z: -5}],
         medkits: type === 'guard' ? [{id: 'browser-medkit', x: 5, z: 15}] : [],
         exit: {x: 17, z: -17, width: 3, depth: 3}});

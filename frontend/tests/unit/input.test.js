@@ -19,13 +19,32 @@ function key(target, type, code, character = '') {
   return event;
 }
 
-test('les touches physiques fonctionnent aussi sur un clavier AZERTY', () => {
+test('ZQSD fonctionne avec les lettres même si le navigateur change les codes physiques', () => {
   const canvas = new EventTarget();
   const keyboard = bindKeyboard(canvas);
-  const event = key(canvas, 'keydown', 'KeyW', 'z');
+  for (const [code, character, direction] of [
+    ['KeyW', 'z', 'forward'], ['KeyZ', 'z', 'forward'],
+    ['KeyA', 'q', 'left'], ['KeyQ', 'q', 'left'],
+    ['KeyS', 's', 'backward'], ['KeyD', 'd', 'right'],
+  ]) {
+    const event = key(canvas, 'keydown', code, character);
+    assert.equal(keyboard.read()[direction], true, `${character} avec ${code}`);
+    assert.equal(event.defaultPrevented, true);
+    key(canvas, 'keyup', code, character);
+    assert.equal(keyboard.read()[direction], false);
+  }
+  keyboard.destroy();
+});
 
-  assert.equal(keyboard.read().forward, true);
-  assert.equal(event.defaultPrevented, true);
+test('changer la casse avec Maj ne laisse pas la touche coincée, même sans code physique', () => {
+  const canvas = new EventTarget();
+  const keyboard = bindKeyboard(canvas);
+  for (const code of ['KeyZ', '', 'Unidentified']) {
+    key(canvas, 'keydown', code, 'Z');
+    assert.equal(keyboard.read().forward, true);
+    key(canvas, 'keyup', code, 'z');
+    assert.equal(keyboard.read().forward, false);
+  }
   keyboard.destroy();
 });
 
@@ -51,8 +70,8 @@ test('les flèches et WASD donnent les quatre directions', () => {
 test('relâcher une touche garde son autre raccourci actif', () => {
   const canvas = new EventTarget();
   const keyboard = bindKeyboard(canvas);
-  key(canvas, 'keydown', 'KeyW');
-  key(canvas, 'keydown', 'ArrowUp');
+  key(canvas, 'keydown', 'KeyW', 'w');
+  key(canvas, 'keydown', 'KeyZ', 'z');
   key(canvas, 'keyup', 'KeyW');
 
   assert.equal(keyboard.read().forward, true);

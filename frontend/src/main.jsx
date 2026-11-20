@@ -104,7 +104,7 @@ function App() {
   const lost = state.status === 'lost';
   const unavailable = state.status === 'unavailable';
   const levelIndex = state.levelIndex ?? 0;
-  const level = LEVELS[levelIndex];
+  const level = state.level ?? LEVELS[levelIndex];
   const hasNext = levelIndex < LEVELS.length - 1;
   const campaignWon = won && !hasNext;
   return <main ref={shell} className={`app-shell ${home ? 'is-home' : 'is-game'}`}>
@@ -125,12 +125,12 @@ function App() {
         <div className="mission-intro">
           <h1>Do<span className="title-right">om</span>{' '}<span className="title-web">W<span className="title-right">eb</span></span></h1>
           <h2>Courez. Ripostez. Trouvez le sas.</h2>
-          <p>Trois grands secteurs, jusqu’à 96 mètres de côté. Traqueurs, colosses et sentinelles occupent les passages. Chaque mission redistribue les rencontres et les soins.</p>
+          <p>Trois grands secteurs, jusqu’à 96 mètres de côté. Traqueurs, colosses et sentinelles occupent les passages. Chaque mission renouvelle le plan, les rencontres et les soins.</p>
           <button className="primary play-button" autoFocus disabled={unavailable} onClick={() => start()}>Jouer <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg></button>
           <p className="mission-facts">64 / 80 / 96 m <span>·</span> 4 types d’ennemis <span>·</span> Tirs illimités</p>
           {unavailable && <p role="alert" className="error">{state.error}</p>}
         </div>
-        <LevelMap />
+        <LevelMap preview />
       </section>
       <section className="score-panel" aria-label="Classement">
         <div className="list-heading"><h2>Tableau des survivants <span>Top 10</span></h2><button className="utility" disabled={loading} onClick={() => loadScores()}>Recharger</button></div>

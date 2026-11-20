@@ -1,0 +1,12 @@
+{
+  "asset": "favicon.png",
+  "mode": "built-in",
+  "tool": "image_gen__imagegen",
+  "generated_at": "2026-11-20 10:09:21 UTC",
+  "prompt": "Use case: logo-brand. Asset type: square browser favicon for the existing game Doom Web. Create one original, bold uppercase letter \"D\" as a thick angular retro FPS monogram, ivory #e4dcc8 face with a restrained ember-red #df6650 bevel offset down-right. Opaque uniform charcoal-olive #11130f square background, straight square corners. Center the D and let it occupy about 85% of the square, with a large clear dark counter and very thick strokes. Strong silhouette and crisp edges, simplified to remain immediately recognizable at 16 by 16 pixels. Match an industrial 1990s shooter mood. Flat front-facing icon with only a tiny stepped bevel; no gradients, noise, fine texture, glow, borders, weapons, skulls, extra letters, full game title, mockup, or watermark. Deliver just the finished square icon, one image.",
+  "dimensions": {
+    "width": 64,
+    "height": 64
+  },
+  "post_processing": "Resized the generated image to 64 × 64 pixels with macOS sips for browser favicon use."
+}

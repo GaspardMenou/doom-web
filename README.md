@@ -4,6 +4,22 @@ FPS rétro solo sur ordinateur, inspiré du premier Doom. Explorez trois secteur
 
 Le projet avance en petits sprints TDD. Les explications et validations des étapes précédentes sont conservées dans l'[historique pédagogique](docs/HISTORIQUE.md).
 
+## Aperçu du jeu
+
+**Accueil — mission, pseudo et aperçu du secteur.**
+
+![Accueil de Doom Web avec la saisie du pseudo, le bouton Jouer et un exemple de carte](docs/screenshots/accueil.webp)
+
+**En jeu — vue à la première personne, arme et HUD.**
+
+![Vue à la première personne dans le secteur Entrée, avec les ennemis, le pistolet et le HUD](docs/screenshots/en-jeu.webp)
+
+**Plan tactique — géométrie réelle de la mission, affichée avec M.**
+
+![Même partie avec le plan tactique affichant les murs, les ennemis, le joueur et le sas](docs/screenshots/plan-tactique.webp)
+
+Captures de la version locale, mission `seed=12345`, avec un classement vide dans une base temporaire.
+
 ## Démarrer en développement
 
 Prérequis : **Node.js ≥ 22.12**, **Python ≥ 3.12** et [uv](https://docs.astral.sh/uv/). Depuis la racine du dépôt, ouvrir deux terminaux.

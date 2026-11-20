@@ -70,7 +70,7 @@ Les tests de vitesse et de fréquence d'images se ressemblent, mais détectent d
 
 ## Scénarios navigateur
 
-Ces quatre scripts ne font pas partie du nombre affiché par `npm test`.
+Ces cinq scripts ne font pas partie du nombre affiché par `npm test`.
 
 | Script | Ce qu'il vérifie |
 | --- | --- |
@@ -78,6 +78,7 @@ Ces quatre scripts ne font pas partie du nombre affiché par `npm test`.
 | [guards](tests/browser/guards.playwright.js) | Arène contrôlée de 40 m avec les vrais placements seedés : repos, poursuite, pause, attaque, deux impacts, 100 points et soin. Second essai avec sentinelle : projectile esquivé, tir maintenu et 250 points. |
 | [campaign](tests/browser/campaign.playwright.js) | Transitions vers les vraies cartes de 80 et 96 m, 2 PV conservés, 2700 points sans élimination, formulaire final et Rejouer. Une arène contrôlée permet d'obtenir la blessure ; les sorties sont temporairement élargies pour atteindre les menus. |
 | [player-stats](tests/browser/player-stats.playwright.js) | Chargement, table, vide, erreurs, nouvel essai et largeur mobile, avec réponses API de test. |
+| [damage-overlay](tests/browser/damage-overlay.playwright.js) | Sang lors d'une baisse de PV, persistance pendant un tir, fondu, nouveau coup, pause/reprise, redémarrage, coup fatal, mouvement réduit et largeur mobile. |
 
 La capture native de la souris est simulée ; la scène, les commandes, les tirs et les règles sont exécutés. Les scripts de jeu bloquent les POST de scores et ne polluent pas le classement. Ces scénarios ne remplacent pas un essai humain pour régler la difficulté. `menus` vérifie le redémarrage d'une même mission ; `campaign` vérifie le retour d'une campagne terminée au niveau 1 avec 3 PV et zéro point. Le redimensionnement attend la taille réellement obtenue.
 

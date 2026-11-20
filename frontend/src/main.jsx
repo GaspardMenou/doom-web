@@ -7,6 +7,7 @@ import {scorePoints} from './game/score.js';
 import {ScoreForm} from './components/ScoreForm.jsx';
 import {Hud} from './components/Hud.jsx';
 import {LevelMap} from './components/LevelMap.jsx';
+import {DamageOverlay} from './components/DamageOverlay.jsx';
 import {toggleFullscreen} from './engine/fullscreen.js';
 import {PlayerStats} from './components/PlayerStats.jsx';
 import {LEVELS} from './game/levels/index.js';
@@ -158,7 +159,7 @@ function App() {
         {playing && state.mapVisible && <aside className="tactical-map" aria-label="Plan tactique">
           <LevelMap level={level} player={state.player} enemies={state.enemies} medkits={state.medkits} />
         </aside>}
-        {playing && state.hurt && <div className="damage-flash" aria-hidden="true" />}
+        <DamageOverlay health={state.playerHealth ?? 3} active={!home && (playing || lost)} />
       </div>
       <p className="game-message" role="status">{campaignWon ? 'Victoire : tous les niveaux sont terminés !' : won ? 'Niveau terminé : la suite vous attend.' : lost ? 'Défaite : vous n’avez plus de vie.' : playing ? (state.lastShot || 'Objectif : rejoignez le sas vert. Maj pour courir.') : 'En pause : la partie vous attend.'}</p>
       <Hud state={state} />

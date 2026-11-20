@@ -291,6 +291,9 @@ Les nouveaux sprites conservent quatre poses par feuille, avec leurs prompts et 
 | --- | --- | --- |
 | Traqueur | [enemy-runner-sheet.png](frontend/public/art/enemy-runner-sheet.png) | [Métadonnées](frontend/public/art/enemy-runner-sheet.png.json) |
 | Sentinelle | [enemy-gunner-sheet.png](frontend/public/art/enemy-gunner-sheet.png) | [Métadonnées](frontend/public/art/enemy-gunner-sheet.png.json) |
+| Sang à l'écran | [damage-blood-overlay.png](frontend/public/art/damage-blood-overlay.png) | [Prompt et provenance](frontend/public/art/damage-blood-overlay.png.json) |
+
+Le retour des dégâts utilise une image de sang transparente générée avec imagegen. `DamageOverlay.jsx` observe les baisses de PV : l'image apparaît pendant 180 ms, puis disparaît avec un fondu de 250 ms. Le centre reste dégagé, les clics passent à travers et le mode mouvement réduit atténue l'effet. Pause et redémarrage le nettoient ; un coup fatal peut encore le déclencher. Le scénario `tests/browser/damage-overlay.playwright.js` a été constaté en échec avant l'implémentation puis au vert, y compris lorsqu'un tir actualise le HUD pendant l'effet, sur mobile et avec mouvement réduit. Les 104 tests Node et le build Vite (53 modules) passent après cet ajout.
 
 Limites : solo sur ordinateur, déplacements sur un seul étage, sprites orientés vers la caméra à quatre poses. Les tirs du joueur restent instantanés ; les sentinelles disposent de vrais projectiles simulés. Le classement conserve des scores déclarés par le client.
 

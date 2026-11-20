@@ -1,0 +1,37 @@
+{
+  "asset": "damage-blood-overlay.png",
+  "created_at": "2026-11-20",
+  "mode": "built-in image generation",
+  "tool": "image_gen__imagegen",
+  "transparent_background": true,
+  "original_design": true,
+  "prompt": "Use case: stylized-concept.\nAsset type: production transparent damage blood overlay texture for a retro first-person browser game.\nPrimary request: a wide landscape PNG blood-splatter screen-edge overlay, approximately 16:9 composition, for a short damage feedback effect in a Doom-inspired retro FPS. The center must stay fully transparent so the player can see the crosshair, enemies and level clearly.\nComposition: blood exists only at the very outer edges and corners. Irregular crimson splashes, thin dragged smears, small scattered drops and a few short descending drips growing inward from the outer border. Restrict almost all visible marks to the outermost 10 to 15 percent of the image. Keep the entire central rectangle spanning 65 percent of the width and 65 percent of the height completely empty with alpha zero. Stronger clusters in corners, asymmetrical varied spacing, some gaps at the border, no continuous rectangular frame. Avoid long central streaks. The asset should read as spatters on the player's visor, not a scene or a photograph.\nStyle/medium: original illustrated retro PC FPS pixel art, coarse visible pixel clusters, stepped edges, limited dark crimson and vivid blood-red palette, subtle darker maroon shadows. Fairly sparse: the effect must leave gameplay readable when composited over an industrial olive/graphite game world. Non-photorealistic stylized blood only.\nBackground: genuine transparent alpha throughout the blank space, including a perfectly transparent center, with alpha feathering only at the splash edges where useful.\nConstraints: no person, skin, body part, organs, wounds, dismemberment, characters, weapons, UI, lettering, numbers, logos, watermark, scenery, floor or solid background. Do not paint a transparency checkerboard or gray/white haze. Do not include a vignette made of opaque black. Deliver only the isolated red blood marks on real transparency.",
+  "source_file": "/Users/gaspard/.codex/generated_images/01a1f8e7-9b63-7ec1-80ca-706f73ac26eb/exec-64da4b19-6702-4dc6-93f6-bb0e03ee4d11.png",
+  "output": {
+    "postprocessing": "No visual edits, resampling, cropping, or alpha replacement; generated alpha preserved. Exact prompt embedded with Impeccable (PNG text metadata only).",
+    "width": 1672,
+    "height": 941,
+    "mode": "RGBA",
+    "bytes": 226041,
+    "format": "PNG",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "transparent_pixels": 1470739,
+    "center_box": [
+      293,
+      165,
+      1379,
+      776
+    ],
+    "center_alpha_extrema": [
+      0,
+      1
+    ],
+    "center_pixels": 663546,
+    "center_pixels_alpha_zero": 663443,
+    "center_pixels_alpha_one": 103,
+    "center_note": "Native transparency preserved. Central 65% rectangle is visually clear: alpha is zero except negligible values of 1/255."
+  }
+}

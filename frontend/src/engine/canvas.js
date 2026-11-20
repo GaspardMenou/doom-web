@@ -191,7 +191,7 @@ export function mountGame(canvas, onState = () => {}) {
       }
       if (triggerHeld) fire(now);
       if (state.playerHealth !== healthBefore || state.status !== statusBefore) {
-        publish('playing', {hurt: state.playerHealth < healthBefore});
+        publish('playing');
         if (state.status !== 'playing') pause();
       }
       if (now - lastPublish > 150) { publish('playing'); lastPublish = now; }
